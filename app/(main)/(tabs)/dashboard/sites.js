@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../../../../src/theme/ThemeContext';
 import { selectCurrentUser } from '../../../../src/store/slices/authSlice';
@@ -71,16 +72,16 @@ export default function SitesScreen() {
   });
 
   // ── PREMIUM PALETTE ──
-  const bgColor = isDark ? '#1a1a1a' : '#f4f4f5';
-  const surfaceColor = isDark ? '#242424' : '#ffffff';
-  const borderColor = isDark ? '#333333' : '#e5e5e5';
-  const searchBg = isDark ? '#2a2a2a' : '#eeeeef';
-  const metricGridBg = isDark ? 'rgba(255,255,255,0.03)' : '#f9fafb';
-
+  const bgColor = isDark ? '#111111' : '#ffffff';
+  const surfaceColor = isDark ? '#1a1a1a' : '#ffffff';
+  const borderColor = isDark ? '#2e2e2e' : '#f0f0f0';
+  const searchBg = isDark ? '#262626' : '#f8fafc';
+  const primaryBlue = '#3b82f6';
+  
   const getHealthColor = health => {
     switch (health) {
-      case 'Healthy': return '#10a37f';
-      case 'Needs Attention': return '#f59e0b';
+      case 'Healthy': return '#22c55e';
+      case 'Warning': return '#eab308';
       case 'Critical': return '#ef4444';
       default: return theme.textSecondary;
     }
@@ -88,67 +89,59 @@ export default function SitesScreen() {
 
   const renderItem = ({ item }) => {
     const { analytics } = item || {};
-    const overdue = analytics?.overdue_count || 0;
-    const complaintsCount = analytics?.complaints_count || 0;
-    const score = analytics?.score ?? 100; 
-    const health = analytics?.health || 'Unknown';
-    const openIssues = (analytics?.open_issues || 0) + (analytics?.assigned_issues || 0) + (analytics?.in_progress_issues || 0);
+    const health = analytics?.health || 'HEALTHY';
+    const openIssues = (analytics?.open_issues || 0) + (analytics?.in_progress_issues || 0);
+    const activeSolvers = analytics?.active_solvers || analytics?.assigned_issues || 0;
+    
+    const isCritical = health.toLowerCase() === 'critical';
 
     return (
       <TouchableOpacity
         activeOpacity={0.7}
         style={[styles.card, { backgroundColor: surfaceColor, borderColor }]}
-        onPress={() =>
-          router.push({
-            pathname: '/(main)/(tabs)/dashboard/site-detail',
-            params: { id: item.id },
-          })
-        }
+        onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/site-detail', params: { id: item.id } })}
       >
-        <View style={styles.cardHeader}>
-          <View style={styles.titleContainer}>
-            <View style={styles.iconWrapper}>
-              <Ionicons name="business-outline" size={20} color={theme.text} />
+        {/* Top Row: Title, Badge, ID */}
+        <View style={styles.cardTopRow}>
+          <Text style={[styles.siteName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+          <View style={styles.badgeIdRow}>
+            <View style={styles.healthBadge}>
+              <View style={[styles.healthDot, { backgroundColor: getHealthColor(health) }]} />
+              <Text style={[styles.healthText, { color: theme.textSecondary }]}>{health.toUpperCase()}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.siteName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
-              <View style={styles.locationRow}>
-                <Ionicons name="location-outline" size={12} color={theme.textSecondary} />
-                <Text style={[styles.siteLocation, { color: theme.textSecondary }]} numberOfLines={1}>{item.location}</Text>
-              </View>
+            <View style={[styles.idPill, { backgroundColor: searchBg }]}>
+              <Text style={[styles.idPillText, { color: theme.textSecondary }]}>SITE-{item.id.toString().padStart(3, '0')}</Text>
             </View>
-          </View>
-
-          <View style={styles.scoreContainer}>
-            <Text style={[styles.scoreText, { color: getHealthColor(health) }]}>{score}%</Text>
-            {health !== 'Unknown' && (
-              <View style={[styles.healthBadge, { backgroundColor: getHealthColor(health) + '15' }]}>
-                <View style={[styles.healthDot, { backgroundColor: getHealthColor(health) }]} />
-                <Text style={[styles.healthText, { color: getHealthColor(health) }]}>{health}</Text>
-              </View>
-            )}
           </View>
         </View>
 
-        {/* ── METRICS DASHBOARD GRID ── */}
-        <View style={[styles.metricsContainer, { backgroundColor: metricGridBg, borderColor }]}>
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Active Issues</Text>
-            <Text style={[styles.metricValue, { color: theme.text }]}>{openIssues}</Text>
+        {/* Location Row */}
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={14} color={theme.textSecondary} />
+          <Text style={[styles.siteLocation, { color: theme.textSecondary }]} numberOfLines={1}>{item.location}</Text>
+        </View>
+
+        {/* Divider with Arrow */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: borderColor }]} />
+          <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} style={{ opacity: 0.5, marginLeft: 8 }} />
+        </View>
+
+        {/* Bottom Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statBlock}>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>OPEN ISSUES</Text>
+            <View style={styles.statValueRow}>
+              <Ionicons name="alert-circle-outline" size={16} color={isCritical ? '#ef4444' : theme.text} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{openIssues}</Text>
+            </View>
           </View>
-          
-          <View style={[styles.metricDivider, { backgroundColor: borderColor }]} />
-          
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Overdue</Text>
-            <Text style={[styles.metricValue, { color: overdue > 0 ? '#ef4444' : theme.text }]}>{overdue}</Text>
-          </View>
-          
-          <View style={[styles.metricDivider, { backgroundColor: borderColor }]} />
-          
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Complaints</Text>
-            <Text style={[styles.metricValue, { color: complaintsCount > 0 ? '#f97316' : theme.text }]}>{complaintsCount}</Text>
+          <View style={styles.statBlock}>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>ACTIVE SOLVERS</Text>
+            <View style={styles.statValueRow}>
+              <Ionicons name="build-outline" size={16} color={primaryBlue} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{activeSolvers}</Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -166,26 +159,12 @@ export default function SitesScreen() {
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={26} color={theme.text} />
-          </TouchableOpacity>
-          <View>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Sites Hub</Text>
-            <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-              {user?.role === 'manager' ? 'All locations overview' : user?.role === 'supervisor' ? 'Your locations' : 'Assigned locations'}
-            </Text>
-          </View>
+          <View style={styles.placeholder} />
         </View>
-        
-        {/* 📍 FIX: Added Header Actions Row for Sync + Avatar */}
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Site Directory</Text>
         <View style={styles.headerActions}>
-          {Platform.OS === 'web' && (
-            <TouchableOpacity onPress={onRefresh} disabled={refreshing} style={styles.webRefreshButton}>
-              <Ionicons name="sync" size={22} color={refreshing ? theme.primary : theme.textSecondary} />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7}>
-            <Avatar uri={user?.avatar} name={user?.name} size="medium" />
+          <TouchableOpacity activeOpacity={0.7} style={styles.filterBtn}>
+            <Ionicons name="funnel-outline" size={22} color={theme.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -196,27 +175,38 @@ export default function SitesScreen() {
           <Ionicons name="search" size={20} color={theme.textSecondary} style={{ opacity: 0.7 }} />
           <TextInput
             style={[styles.searchTextInput, { color: theme.text }]}
-            placeholder="Search sites or locations..."
+            placeholder="Search site name, ID or location..."
             placeholderTextColor={theme.textSecondary}
             value={searchText}
             onChangeText={setSearchText}
           />
-          {searchText !== '' && (
-            <TouchableOpacity onPress={() => setSearchText('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
 
-      {/* ── RESULTS COUNT ── */}
-      {searchText !== '' && (
-        <View style={styles.resultsHeader}>
-          <Text style={[styles.resultsCount, { color: theme.textSecondary }]}>
-            {filteredSites.length} {filteredSites.length === 1 ? 'Site' : 'Sites'} found
-          </Text>
-        </View>
-      )}
+      {/* ── FILTER PILLS ── */}
+      <View style={styles.chipsContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingRight: 80 }}>
+          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : '#eef2ff' }]}>
+            <Text style={[styles.chipTextActive, { color: primaryBlue }]}>All Sites ({sites.length})</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.chip, styles.chipOutline, { borderColor }]}>
+            <Text style={[styles.chipText, { color: theme.text }]}>Critical ({sites.filter(s=>s.analytics?.health?.toLowerCase() === 'critical').length})</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.chip, styles.chipOutline, { borderColor }]}>
+            <Text style={[styles.chipText, { color: theme.text }]}>Warning ({sites.filter(s=>s.analytics?.health?.toLowerCase() === 'warning').length})</Text>
+          </TouchableOpacity>
+        </ScrollView>
+        <TouchableOpacity style={[styles.sortBtn, { backgroundColor: bgColor }]}>
+          <Ionicons name="swap-vertical" size={14} color={theme.textSecondary} />
+          <Text style={[styles.sortText, { color: theme.textSecondary }]}>Sort</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── RESULTS HEADER ── */}
+      <View style={styles.resultsHeader}>
+        <Text style={[styles.resultsCount, { color: theme.textSecondary }]}>RECENT SITES</Text>
+        <Text style={[styles.resultsSub, { color: theme.textSecondary }]}>Showing {Math.min(5, filteredSites.length)} of {sites.length}</Text>
+      </View>
 
       {/* ── LIST ── */}
       {sites.length === 0 && !loading ? (
@@ -230,11 +220,19 @@ export default function SitesScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          // 📍 FIX: Disables double spinner on web
           refreshControl={
             Platform.OS === 'web' ? undefined : (
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.textSecondary} />
             )
+          }
+          ListFooterComponent={
+            <View style={styles.footerContainer}>
+              <View style={[styles.footerIconBox, { backgroundColor: searchBg }]}>
+                <Ionicons name="business-outline" size={24} color={theme.textSecondary} />
+              </View>
+              <Text style={[styles.footerTitle, { color: theme.textSecondary }]}>End of Directory</Text>
+              <Text style={[styles.footerSub, { color: theme.textSecondary }]}>Contact operations for new site additions</Text>
+            </View>
           }
         />
       )}
@@ -263,58 +261,69 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backButton: { padding: 4, marginLeft: -4 },
-  headerTitle: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 13, fontWeight: '500', marginTop: 2 },
-  webRefreshButton: { padding: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
+  placeholder: { width: 32 },
+  filterBtn: { padding: 4 },
   
-  searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
   searchInputWrapper: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 14, 
-    height: 48, 
-    borderRadius: 14, 
+    paddingHorizontal: 16, 
+    height: 50, 
+    borderRadius: 25, 
     gap: 10 
   },
-  searchTextInput: { flex: 1, fontSize: 15, fontWeight: '500' },
+  searchTextInput: { flex: 1, fontSize: 15 },
   
-  resultsHeader: { paddingHorizontal: 20, paddingBottom: 8, paddingTop: 4 },
-  resultsCount: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.8 },
+  chipsContainer: { marginBottom: 16, position: 'relative' },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  chipOutline: { borderWidth: 1, backgroundColor: 'transparent' },
+  chipTextActive: { fontSize: 13, fontWeight: '700' },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  sortBtn: { position: 'absolute', right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 4, zIndex: 10 },
+  sortText: { fontSize: 13, fontWeight: '600' },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 30, paddingTop: 8 },
+  resultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
+  resultsCount: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
+  resultsSub: { fontSize: 11 },
+
+  listContent: { paddingHorizontal: 16, paddingBottom: 30 },
   
   card: { 
-    borderRadius: 20, 
+    borderRadius: 16, 
     borderWidth: 1, 
-    padding: 16, 
-    marginBottom: 14,
+    padding: 20, 
+    marginBottom: 16,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6 },
       android: { elevation: 1 },
     }),
   },
   
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  titleContainer: { flexDirection: 'row', gap: 12, flex: 1, paddingRight: 16 },
-  iconWrapper: { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(142,142,160,0.1)', justifyContent: 'center', alignItems: 'center' },
-  siteName: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3, marginBottom: 4 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  siteLocation: { fontSize: 13, fontWeight: '500' },
-  
-  scoreContainer: { alignItems: 'flex-end', gap: 6 },
-  scoreText: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  healthBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, gap: 5 },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
+  siteName: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, flex: 1, marginRight: 8 },
+  badgeIdRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   healthDot: { width: 6, height: 6, borderRadius: 3 },
-  healthText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  healthText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  idPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  idPillText: { fontSize: 10, fontWeight: '700' },
   
-  metricsContainer: { 
-    flexDirection: 'row', 
-    borderRadius: 12, 
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 12,
-  },
-  metricItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  metricDivider: { width: StyleSheet.hairlineWidth, height: '80%', alignSelf: 'center', opacity: 0.5 },
-  metricLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  metricValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+  siteLocation: { fontSize: 13 },
+  
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  dividerLine: { height: StyleSheet.hairlineWidth, flex: 1 },
+  
+  statsRow: { flexDirection: 'row' },
+  statBlock: { flex: 1 },
+  statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
+  statValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statValue: { fontSize: 18, fontWeight: '800' },
+
+  footerContainer: { alignItems: 'center', paddingVertical: 40 },
+  footerIconBox: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  footerTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  footerSub: { fontSize: 12 },
 });
