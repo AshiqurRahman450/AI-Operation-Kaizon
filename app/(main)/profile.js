@@ -73,7 +73,9 @@ export default function ProfileScreen() {
       
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor, borderBottomWidth: 1 }]}>
-        <View style={styles.placeholder} />
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={26} color={theme.text} />
+        </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>My Profile</Text>
         <TouchableOpacity style={styles.iconButton}>
           <Ionicons name="settings-outline" size={22} color={theme.text} />
@@ -281,6 +283,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   iconButton: { padding: 4 },
+  backButton: { padding: 4, marginLeft: -4 },
   headerTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
   placeholder: { width: 32 },
   content: { flex: 1 },
