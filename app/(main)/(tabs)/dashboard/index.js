@@ -268,67 +268,124 @@ export default function DashboardScreen() {
     propsForDots: { r: '4', strokeWidth: '2', stroke: isDark ? '#171717' : '#ffffff' },
   };
 
-  // Alert card config — keeps all routing logic untouched
-  const alertCards = [
+  const healthCardsData = !isSolverView ? [
     {
-      icon: 'alert-circle',
+      id: 'open',
+      title: 'OPEN ISSUES',
+      count: stats?.notFixedIssues || 0,
+      icon: 'list',
+      route: '/(main)/(tabs)/dashboard/not-fixed',
+      lightTheme: { bg: '#e0f2fe', iconBg: '#ffffff', iconColor: '#0f172a', arrowColor: '#60a5fa', textColor: '#0f172a', titleColor: '#475569' },
+      darkTheme: { bg: 'rgba(56,189,248,0.15)', iconBg: 'rgba(56,189,248,0.2)', iconColor: '#38bdf8', arrowColor: '#0284c7', textColor: '#e0f2fe', titleColor: '#bae6fd' },
+    },
+    {
+      id: 'escalated',
+      title: 'ESCALATED',
       count: alerts?.escalations || 0,
-      label: 'Escalated',
-      accentColor: '#ef4444',
-      bgLight: '#fef2f2',
-      bgDark: 'rgba(239,68,68,0.08)',
-      borderLight: '#fecaca',
-      borderDark: 'rgba(239,68,68,0.2)',
-      iconBgLight: '#fee2e2',
-      iconBgDark: 'rgba(239,68,68,0.15)',
+      icon: 'warning-outline',
       route: '/(main)/(tabs)/dashboard/escalated',
+      lightTheme: { bg: '#fce8ec', iconBg: '#ffffff', iconColor: '#ef4444', arrowColor: '#fca5a5', textColor: '#881337', titleColor: '#9f1239' },
+      darkTheme: { bg: 'rgba(239,68,68,0.15)', iconBg: 'rgba(239,68,68,0.2)', iconColor: '#f87171', arrowColor: '#ef4444', textColor: '#fecaca', titleColor: '#fca5a5' },
     },
     {
-      icon: 'clipboard-outline',
-      count: alerts?.pendingReviews || 0,
-      label: 'Pending Review',
-      accentColor: '#3b82f6',
-      bgLight: '#eff6ff',
-      bgDark: 'rgba(59,130,246,0.08)',
-      borderLight: '#bfdbfe',
-      borderDark: 'rgba(59,130,246,0.2)',
-      iconBgLight: '#dbeafe',
-      iconBgDark: 'rgba(59,130,246,0.15)',
-      route: '/(main)/(tabs)/dashboard/awaiting_review',
+      id: 'fixed',
+      title: 'FIXED ITEMS',
+      count: stats?.fixedIssues || 0,
+      icon: 'shield-checkmark-outline',
+      route: '/(main)/(tabs)/dashboard/fixed',
+      lightTheme: { bg: '#ffffff', border: '#e2e8f0', iconBg: '#ffffff', iconColor: '#0f172a', arrowColor: '#94a3b8', textColor: '#0f172a', titleColor: '#475569' },
+      darkTheme: { bg: '#171717', border: '#2a2a2a', iconBg: '#262626', iconColor: '#f8fafc', arrowColor: '#475569', textColor: '#f8fafc', titleColor: '#cbd5e1' },
     },
+    {
+      id: 'review',
+      title: 'TO REVIEW',
+      count: alerts?.pendingReviews || 0,
+      icon: 'clipboard-outline',
+      route: '/(main)/(tabs)/dashboard/awaiting_review',
+      lightTheme: { bg: '#fff4e0', iconBg: '#ffffff', iconColor: '#b45309', arrowColor: '#fcd34d', textColor: '#78350f', titleColor: '#92400e' },
+      darkTheme: { bg: 'rgba(245,158,11,0.15)', iconBg: 'rgba(245,158,11,0.2)', iconColor: '#fbbf24', arrowColor: '#f59e0b', textColor: '#fde68a', titleColor: '#fcd34d' },
+    }
+  ] : [
+    {
+      id: 'active',
+      title: 'ACTIVE TASKS',
+      count: stats?.notFixedIssues || 0,
+      icon: 'time-outline',
+      route: '/(main)/(tabs)/dashboard/not-fixed',
+      lightTheme: { bg: '#e0f2fe', iconBg: '#ffffff', iconColor: '#0f172a', arrowColor: '#60a5fa', textColor: '#0f172a', titleColor: '#475569' },
+      darkTheme: { bg: 'rgba(56,189,248,0.15)', iconBg: 'rgba(56,189,248,0.2)', iconColor: '#38bdf8', arrowColor: '#0284c7', textColor: '#e0f2fe', titleColor: '#bae6fd' },
+    },
+    {
+      id: 'my-sites',
+      title: 'MY SITES',
+      count: sitesList?.length || 0,
+      icon: 'business-outline',
+      route: '/(main)/(tabs)/dashboard/sites',
+      lightTheme: { bg: '#fce8ec', iconBg: '#ffffff', iconColor: '#ef4444', arrowColor: '#fca5a5', textColor: '#881337', titleColor: '#9f1239' },
+      darkTheme: { bg: 'rgba(239,68,68,0.15)', iconBg: 'rgba(239,68,68,0.2)', iconColor: '#f87171', arrowColor: '#ef4444', textColor: '#fecaca', titleColor: '#fca5a5' },
+    },
+    {
+      id: 'resolved',
+      title: 'RESOLVED',
+      count: stats?.fixedIssues || 0,
+      icon: 'checkmark-done',
+      route: '/(main)/(tabs)/dashboard/fixed',
+      lightTheme: { bg: '#ffffff', border: '#e2e8f0', iconBg: '#ffffff', iconColor: '#0f172a', arrowColor: '#94a3b8', textColor: '#0f172a', titleColor: '#475569' },
+      darkTheme: { bg: '#171717', border: '#2a2a2a', iconBg: '#262626', iconColor: '#f8fafc', arrowColor: '#475569', textColor: '#f8fafc', titleColor: '#cbd5e1' },
+    },
+    {
+      id: 'analytics',
+      title: 'MY ANALYTICS',
+      count: (stats?.fixedIssues || 0) + (stats?.notFixedIssues || 0),
+      icon: 'stats-chart',
+      route: { pathname: '/(main)/(tabs)/dashboard/solver-profile', params: { id: user?.id } },
+      lightTheme: { bg: '#fff4e0', iconBg: '#ffffff', iconColor: '#b45309', arrowColor: '#fcd34d', textColor: '#78350f', titleColor: '#92400e' },
+      darkTheme: { bg: 'rgba(245,158,11,0.15)', iconBg: 'rgba(245,158,11,0.2)', iconColor: '#fbbf24', arrowColor: '#f59e0b', textColor: '#fde68a', titleColor: '#fcd34d' },
+    }
   ];
 
+  const renderHealthCard = (card) => {
+    const t = isDark ? card.darkTheme : card.lightTheme;
+    return (
+      <TouchableOpacity 
+        key={card.id}
+        style={[
+          styles.healthCard, 
+          { backgroundColor: t.bg, borderColor: t.border || 'transparent', borderWidth: t.border ? 1 : 0 }
+        ]} 
+        onPress={() => router.push(card.route)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.healthCardHeader}>
+          <View style={[styles.healthIconWrap, { backgroundColor: t.iconBg, borderColor: t.border || 'transparent', borderWidth: t.border ? 1 : 0 }]}>
+            <Ionicons name={card.icon} size={18} color={t.iconColor} />
+          </View>
+          <Ionicons name="arrow-forward" size={16} color={t.arrowColor} />
+        </View>
+        <View style={styles.healthCardBody}>
+          <Text style={[styles.healthCardCount, { color: t.textColor }]}>
+            {card.count.toString().padStart(2, '0')}
+          </Text>
+          <Text style={[styles.healthCardTitle, { color: t.titleColor }]}>{card.title}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#111111' : '#f4f4f6' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#111111' : '#ffffff' }]}>
       
       {/* ── HEADER ── */}
-      <View style={[styles.header, { backgroundColor: isDark ? '#111111' : '#f4f4f6' }]}>
-        <View>
-          <Text style={[styles.greeting, { color: theme.textSecondary }]}>Analytics Overview</Text>
-          <Text style={[styles.userName, { color: theme.text }]}>{isSolverView ? 'Workspace' : 'Dashboard'}</Text>
+      <View style={[styles.header, { backgroundColor: isDark ? '#111111' : '#ffffff' }]}>
+        <View style={styles.headerLeft} />
+        
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>AI-Operation Kaizen</Text>
         </View>
         
         <View style={styles.headerActions}>
-          {Platform.OS === 'web' && (
-            <TouchableOpacity 
-              onPress={onRefresh} 
-              disabled={refreshing}
-              style={styles.refreshButton}
-            >
-              <Ionicons 
-                name="sync" 
-                size={22} 
-                color={refreshing ? theme.primary : theme.textSecondary} 
-              />
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity onPress={() => router.push('/(main)/(tabs)/chat')} activeOpacity={0.7} style={{ marginRight: 4, padding: 4 }}>
-            <Ionicons name="arrow-undo-outline" size={24} color={theme.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7}>
-            <Avatar uri={user?.avatar} name={user?.name} size="medium" />
+          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7} style={styles.bellButton}>
+            <Ionicons name="notifications-outline" size={24} color={theme.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -340,75 +397,42 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.textSecondary} />}
       >
 
-        {/* ── ACTION REQUIRED ALERTS (Manager only) ── */}
-        {!isSolverView && <View style={styles.statsContainer}>
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Action Required</Text>
-          
-          <View style={styles.alertsRow}>
-            {alertCards.map((card) => (
-              <TouchableOpacity
-                key={card.label}
-                activeOpacity={0.75}
-                onPress={() => router.push(card.route)}
-                style={[
-                  styles.alertCard,
-                  {
-                    backgroundColor: isDark ? card.bgDark : card.bgLight,
-                    borderColor: isDark ? card.borderDark : card.borderLight,
-                  },
-                ]}
-              >
-                {/* Accent bar */}
-                <View style={[styles.alertAccentBar, { backgroundColor: card.accentColor }]} />
-
-                {/* Icon */}
-                <View style={[styles.alertIconWrap, { backgroundColor: isDark ? card.iconBgDark : card.iconBgLight }]}>
-                  <Ionicons name={card.icon} size={18} color={card.accentColor} />
-                </View>
-
-                {/* Count */}
-                <Text style={[styles.alertCount, { color: card.accentColor }]}>
-                  {card.count}
-                </Text>
-
-                {/* Label */}
-                <Text
-                  style={[styles.alertLabel, { color: isDark ? card.accentColor : card.accentColor }]}
-                  numberOfLines={2}
-                  adjustsFontSizeToFit
-                >
-                  {card.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {/* ── UPDATING DATA INDICATOR ── */}
+        {refreshing && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 }}>
+            <Ionicons name="sync" size={16} color={theme.textSecondary} />
+            <Text style={{ fontSize: 13, color: theme.textSecondary }}>Updating data...</Text>
           </View>
-        </View>}
+        )}
 
-        {/* ── KEY METRICS ── */}
+        {/* ── OPERATIONAL HEALTH ── */}
         <View style={styles.statsContainer}>
-          <View style={styles.statsRow}>
-            <DashboardCard title={isSolverView ? "Active Tasks" : "Pending issues"} count={stats?.notFixedIssues || 0} icon="time-outline" color="#f59e0b" onPress={() => router.push('/(main)/(tabs)/dashboard/not-fixed')} />
-            <DashboardCard title="Resolved" count={stats?.fixedIssues || 0} icon="checkmark-done" color="#10a37f" onPress={() => router.push('/(main)/(tabs)/dashboard/fixed')} />
+          <View style={styles.healthHeader}>
+            <View style={styles.healthTitleWrap}>
+              <Ionicons name="shield-checkmark-outline" size={16} color="#3b82f6" />
+              <Text style={[styles.healthTitle, { color: theme.textSecondary }]}>OPERATIONAL HEALTH</Text>
+            </View>
+            <View style={[styles.liveFeedBadge, { backgroundColor: isDark ? '#262626' : '#f3f4f6' }]}>
+              <Text style={[styles.liveFeedText, { color: isDark ? '#a3a3a3' : '#6b7280' }]}>LIVE FEED</Text>
+            </View>
           </View>
+          
+          <View style={styles.gridContainer}>
+            <View style={styles.gridRow}>
+              {renderHealthCard(healthCardsData[0])}
+              {renderHealthCard(healthCardsData[1])}
+            </View>
+            <View style={styles.gridRow}>
+              {renderHealthCard(healthCardsData[2])}
+              {renderHealthCard(healthCardsData[3])}
+            </View>
+          </View>
+        </View>
 
+        {/* ── KEY METRICS (Remaining roles) ── */}
+        <View style={styles.statsContainer}>
           {isSolverView ? (
             <>
-              <View style={styles.statsRow}>
-                <DashboardCard 
-                  title="My Analytics" 
-                  count={(stats?.fixedIssues || 0) + (stats?.notFixedIssues || 0)} 
-                  icon="stats-chart" 
-                  color="#8b5cf6" 
-                  onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/solver-profile', params: { id: user?.id } })} 
-                />
-                <DashboardCard 
-                  title="My Sites" 
-                  count={sitesList?.length || 0} 
-                  icon="business-outline" 
-                  color="#3b82f6" 
-                  onPress={() => router.push('/(main)/(tabs)/dashboard/sites')}
-                />
-              </View>
               <View style={styles.statsRow}>
                 <DashboardCard 
                   title="Complaints Logged" 
@@ -624,10 +648,19 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── DYNAMIC LINE CHART ── */}
-        <View style={[styles.chartCard, { backgroundColor: surfaceColor, borderColor }]}>
-          <Text style={[styles.chartTitle, { color: theme.text }]}>
-            {currentRole === ROLES.MANAGER ? 'Solver Bandwidth' : isSolverView ? 'Upcoming Deadlines' : 'Recent Issues'}
-          </Text>
+        <View style={[styles.chartCard, { backgroundColor: isDark ? '#171717' : '#f8fafc', borderColor: isDark ? '#2a2a2a' : '#f1f5f9' }]}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderTitleWrap}>
+              <Text style={[styles.chartTitle, { color: theme.text }]}>
+                {currentRole === ROLES.MANAGER ? 'Solver Bandwidth' : isSolverView ? 'Upcoming Deadlines' : 'Recent Issues'}
+              </Text>
+              <View style={styles.blueDot} />
+            </View>
+            <View style={styles.cardHeaderTimeWrap}>
+              <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+              <Text style={[styles.realTimeText, { color: theme.textSecondary }]}>Live</Text>
+            </View>
+          </View>
           <Text style={[styles.chartSubtitle, { color: theme.textSecondary }]}>
             {calculatedLineData.subtitle}
           </Text>
@@ -651,8 +684,17 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── PIE CHART ── */}
-        <View style={[styles.chartCard, { backgroundColor: surfaceColor, borderColor }]}>
-          <Text style={[styles.chartTitle, { color: theme.text }]}>Status Breakdown</Text>
+        <View style={[styles.chartCard, { backgroundColor: isDark ? '#171717' : '#f8fafc', borderColor: isDark ? '#2a2a2a' : '#f1f5f9' }]}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderTitleWrap}>
+              <Text style={[styles.chartTitle, { color: theme.text }]}>Status Breakdown</Text>
+              <View style={styles.blueDot} />
+            </View>
+            <View style={styles.cardHeaderTimeWrap}>
+              <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+              <Text style={[styles.realTimeText, { color: theme.textSecondary }]}>Live</Text>
+            </View>
+          </View>
           <Text style={[styles.chartSubtitle, { color: theme.textSecondary }]}>Distribution of issues by current status.</Text>
           <View ref={pieChartRef} collapsable={false} style={{ backgroundColor: surfaceColor, alignItems: 'center' }}>
             <PieChart data={pieData} width={SCREEN_WIDTH - 64} height={200} chartConfig={chartConfig} accessor="population" backgroundColor="transparent" paddingLeft="15" absolute />
@@ -662,8 +704,17 @@ export default function DashboardScreen() {
 
         {/* ── BAR CHART (Manager Only) ── */}
         {!isSolverView && currentRole === ROLES.MANAGER && (
-          <View style={[styles.chartCard, { backgroundColor: surfaceColor, borderColor }]}>
-            <Text style={[styles.chartTitle, { color: theme.text }]}>Site Performance</Text>
+          <View style={[styles.chartCard, { backgroundColor: isDark ? '#171717' : '#f8fafc', borderColor: isDark ? '#2a2a2a' : '#f1f5f9' }]}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.cardHeaderTitleWrap}>
+                <Text style={[styles.chartTitle, { color: theme.text }]}>Site Performance</Text>
+                <View style={styles.blueDot} />
+              </View>
+              <View style={styles.cardHeaderTimeWrap}>
+                <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+                <Text style={[styles.realTimeText, { color: theme.textSecondary }]}>Live</Text>
+              </View>
+            </View>
             <Text style={[styles.chartSubtitle, { color: theme.textSecondary }]}>Total issues handled per location.</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View ref={barChartRef} collapsable={false} style={{ backgroundColor: surfaceColor, paddingRight: 16 }}>
@@ -686,10 +737,16 @@ export default function DashboardScreen() {
 
         {/* ── RECENT ISSUES FEED ── */}
         {recentIssues?.length > 0 && (
-          <View style={[styles.chartCard, { backgroundColor: surfaceColor, borderColor, padding: 0, overflow: 'hidden' }]}>
-            <View style={{ padding: 20, paddingBottom: 10 }}>
-              <Text style={[styles.chartTitle, { color: theme.text }]}>{isSolverView ? "My Active Tasks" : "Recent Activity"}</Text>
-              <Text style={[styles.chartSubtitle, { color: theme.textSecondary, marginBottom: 10 }]}>Current tasks requiring attention.</Text>
+          <View style={[styles.chartCard, { backgroundColor: isDark ? '#171717' : '#f8fafc', borderColor: isDark ? '#2a2a2a' : '#f1f5f9', padding: 0, overflow: 'hidden' }]}>
+            <View style={[styles.cardHeaderRow, { padding: 20, paddingBottom: 10 }]}>
+              <View style={styles.cardHeaderTitleWrap}>
+                <Text style={[styles.chartTitle, { color: theme.text }]}>{isSolverView ? "My Active Tasks" : "Recent Activity"}</Text>
+                <View style={styles.blueDot} />
+              </View>
+              <View style={styles.cardHeaderTimeWrap}>
+                <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+                <Text style={[styles.realTimeText, { color: theme.textSecondary }]}>Real-time</Text>
+              </View>
             </View>
             
             {recentIssues.map((issue, index) => {
@@ -705,31 +762,40 @@ export default function DashboardScreen() {
               return (
                 <TouchableOpacity 
                   key={issue.id} 
-                  style={[styles.issueRow, { borderTopColor: borderColor, borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth }]}
+                  style={[styles.issueRow, { paddingTop: index === 0 ? 10 : 16, paddingBottom: 16 }]}
                   onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/issue-detail', params: { id: issue.id } })}
                 >
-                  <View style={{ flex: 1, paddingRight: 12 }}>
-                    
-                    <View style={styles.titleRow}>
-                      <Text style={[styles.issueTitle, { color: theme.text }]} numberOfLines={1}>
-                        {issue.title}
-                      </Text>
-                      
-                      {deadline && (
-                        <View style={[styles.deadlineBadge, { backgroundColor: `${deadline.color}15` }]}>
-                          <Text style={[styles.deadlineText, { color: deadline.color }]}>
-                            {deadline.text}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <Text style={[styles.issueMeta, { color: theme.textSecondary }]}>
-                      {issue.site_name} · #{issue.id}
-                      {displayDate ? ` · ${datePrefix}: ${displayDate}` : ''}
-                    </Text>
+                  <View style={{ marginRight: 14 }}>
+                    <Avatar 
+                      name={issue.site_name} 
+                      uri={`https://i.pravatar.cc/150?u=${issue.id}`}
+                      size="medium" 
+                    />
                   </View>
-                  <StatusBadge status={issue.status} />
+                  
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text, flexShrink: 1, marginRight: 8 }} numberOfLines={1}>
+                        {issue.site_name}
+                      </Text>
+                      <Text style={{ fontSize: 10, fontWeight: '600', color: theme.textSecondary, textTransform: 'uppercase' }}>
+                        {displayDate ? displayDate.toUpperCase() : ''}
+                      </Text>
+                    </View>
+                    
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }} numberOfLines={1}>
+                      {issue.title} <Text style={{ fontWeight: '700', textDecorationLine: 'underline', color: theme.text }}>IS-{issue.id}</Text>
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                       <Text style={{ fontSize: 11, color: theme.textSecondary }}>{datePrefix}</Text>
+                       {deadline && (
+                         <View style={[styles.deadlineBadge, { backgroundColor: `${deadline.color}15` }]}>
+                           <Text style={[styles.deadlineText, { color: deadline.color }]}>{deadline.text}</Text>
+                         </View>
+                       )}
+                    </View>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -761,15 +827,16 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 20 : 10,
     paddingBottom: 20,
   },
-  greeting: { fontSize: 13, fontWeight: '500', marginBottom: 3, letterSpacing: 0.2 },
-  userName: { fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  refreshButton: { padding: 8, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerLeft: { width: 40 },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  headerActions: { width: 40, alignItems: 'flex-end' },
+  bellButton: { padding: 4 },
   content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 0 },
 
   // ── SECTION TITLE ──
@@ -783,85 +850,47 @@ const styles = StyleSheet.create({
   },
 
   // ── CONTAINERS ──
-  statsContainer: { marginBottom: 24 },
-  statsRow: { flexDirection: 'row', marginBottom: 12, gap: 12 },
+  statsContainer: { marginBottom: 32 },
+  statsRow: { flexDirection: 'row', marginBottom: 16, gap: 16 },
   fullWidthCard: { flex: 1, marginRight: 0 },
 
-  // ── ALERT CARDS — now match chart card language ──
-  alertsRow: { flexDirection: 'row', gap: 10 },
-  alertCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingTop: 0,          // accent bar sits flush at top
-    paddingBottom: 16,
-    paddingHorizontal: 12,
-    alignItems: 'flex-start',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: { elevation: 1 },
-    }),
-  },
-  alertAccentBar: {
-    width: '100%',          // full-width top stripe — mirrors chart card section headers
-    height: 3,
-    borderRadius: 2,
-    marginBottom: 14,
-    marginLeft: -12,        // bleed to edges of paddingHorizontal
-    alignSelf: 'stretch',
-    // override width approach:
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  alertIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,          // pushes below the accent bar
-    marginBottom: 12,
-  },
-  alertCount: {
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: -1,
-    marginBottom: 4,
-    lineHeight: 34,
-  },
-  alertLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    lineHeight: 15,
-  },
+  // ── HEALTH GRID CARDS ──
+  healthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingHorizontal: 4 },
+  healthTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  healthTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.1 },
+  liveFeedBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  liveFeedText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  gridContainer: { flexDirection: 'column', gap: 10 },
+  gridRow: { flexDirection: 'row', gap: 10 },
+  healthCard: { flex: 1, borderRadius: 16, padding: 16 },
+  healthCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  healthIconWrap: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  healthCardBody: { gap: 4 },
+  healthCardCount: { fontSize: 32, fontWeight: '800', letterSpacing: -1, lineHeight: 36 },
+  healthCardTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
 
   // ── CHART CARDS ──
   chartCard: {
-    marginBottom: 16,
+    marginBottom: 24,
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 24,
     borderWidth: 1,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.03,
+        shadowRadius: 12,
       },
       android: { elevation: 1 },
     }),
   },
-  chartTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3, marginBottom: 3 },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  cardHeaderTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  blueDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' },
+  cardHeaderTimeWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  realTimeText: { fontSize: 12 },
+  chartTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3, marginBottom: 0 },
   chartSubtitle: { fontSize: 13, marginBottom: 20, lineHeight: 18, opacity: 0.75 },
   chart: { borderRadius: 12, marginLeft: -10 },
 

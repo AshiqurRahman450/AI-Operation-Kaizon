@@ -8,24 +8,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { withRetry } from '../utils/networkRetry';
-import  { uploadImageToImageKit } from './imagekitService';
+import { uploadImageToImageKit } from './imagekitService';
 
 // API Base URL - Backend is on port 8001
 // const getBaseUrl = () => {
 //   // For production/preview deployments, use the EXPO_PUBLIC_BACKEND_URL
 //   const backendUrl = Constants.expoConfig?.extra?.backendUrl || 
 //                      process.env.EXPO_PUBLIC_BACKEND_URL;
-  
+
 //   if (backendUrl) {
 //     return `${backendUrl}/api`;
 //   }
-  
+
 //   // For local development
 //   if (Platform.OS === 'web') {
 //     // Use relative URL which will be proxied
 //     return 'http://localhost:8001/api';
 //   }
-  
+
 //   // Native apps need full URL
 //   return 'http://localhost:8001/api';//https://api.kairoxaitech.com
 // };
@@ -172,17 +172,17 @@ export const getStoredUser = async () => {
 // export const fetchIssues = async (filters = {}) => {
 //   try {
 //     const queryParams = {};
-    
+
 //     // Map filters to match backend expectations exactly
 //     if (filters.status) queryParams.status_filter = filters.status; 
 //     if (filters.priority) queryParams.priority = filters.priority;
 //     if (filters.site_id) queryParams.site_id = filters.site_id;
 //     if (filters.search) queryParams.search = filters.search;
-    
+
 //     // 📍 THE FIX: Translate Redux cursor to Backend 'skip'
 //     const limit = filters.limit || 10;
 //     const currentSkip = filters.cursor ? parseInt(filters.cursor, 10) : 0;
-    
+
 //     queryParams.skip = currentSkip;
 //     queryParams.limit = limit;
 
@@ -191,9 +191,9 @@ export const getStoredUser = async () => {
 //       () => api.get('/api/v1/issues', { params: queryParams }),
 //       { maxRetries: 2 }
 //     );
-    
+
 //     const data = response.data;
-    
+
 //     // Extract the list of issues and total count
 //     const rawItems = data.issues || data.items || [];
 //     const totalItems = data.total || 0;
@@ -450,7 +450,7 @@ export const fetchDashboardStats = async () => {
         escalations: countByStatus(mockIssues, ['ESCALATED']),
         deadlines: mockIssues.filter(
           (i) => new Date(i.deadline_at) < new Date() &&
-          !['COMPLETED'].includes(i.status)
+            !['COMPLETED'].includes(i.status)
         ).length,
         pendingReviews: 3,
       },
@@ -591,8 +591,8 @@ export const sendChatMessage = async (
   text,
   sessionId = null,
   currentIssueId = null,
-  imageUrl = null, 
-  intent = null 
+  imageUrl = null,
+  intent = null
 ) => {
   console.log('\n💬 ─── 1. SENDING CHAT MESSAGE ───');
 
@@ -601,7 +601,7 @@ export const sendChatMessage = async (
       message: text,
       session_id: sessionId,
       issue_id: currentIssueId,
-      image_url: imageUrl, 
+      image_url: imageUrl,
       metadata: {
         platform: Platform.OS,
         timestamp: new Date().toISOString(),
@@ -613,7 +613,7 @@ export const sendChatMessage = async (
     console.log(JSON.stringify(requestBody, null, 2));
 
     const response = await api.post('/api/v1/chat/', requestBody);
-    
+
     console.log('\n✅ Chat Response Success!');
     console.log('🚨 PROOF: THIS IS EXACTLY WHAT THE BACKEND RETURNED 🚨');
     console.log(JSON.stringify(response.data, null, 2));
@@ -648,7 +648,7 @@ export const sendChatWithImage = async ({
       text,
       sessionId,
       currentIssueId,
-      imageUri, 
+      imageUri,
       intent
     );
 
@@ -660,7 +660,7 @@ export const sendChatWithImage = async ({
     // 📍 CRITICAL CHECK: Extract the issue ID
     const rawData = chatRes.data || {};
     const issueId = rawData.issue_id || rawData.data?.issue_id || currentIssueId;
-    
+
     console.log('\n▶️ STEP 1.5: Extracted Issue ID for Image Upload:', issueId);
 
     // 🟡 STEP 2: Handle image
@@ -680,7 +680,7 @@ export const sendChatWithImage = async ({
         console.log(`✅ SUCCESS: ImageKit returned CDN URL: ${imageUrl}`);
       } catch (ikError) {
         console.error('❌ FAILED: ImageKit Upload Crashed:', ikError);
-        throw ikError; 
+        throw ikError;
       }
 
       // 🔵 Save to DB
@@ -697,7 +697,7 @@ export const sendChatWithImage = async ({
       } catch (dbError) {
         console.error('❌ FAILED: Backend refused to save image to DB:', dbError.response?.data || dbError.message);
       }
-      
+
     } else if (imageUri && !issueId) {
       console.warn('⚠️ WARNING: We sent the image, but the backend did not return an issue_id to upload it to!');
     } else {
@@ -871,7 +871,7 @@ export const fetchResolvedIssuesCard = async ({
     } else {
       console.error('🚨 Network/Axios Error:', error.message);
     }
-;
+    ;
     console.error('────────────────────────────────\n');
 
     return {
@@ -1001,11 +1001,11 @@ export const fetchDashboardCardIssueDetail = async (cardType, issueId) => {
   console.log(`\n📄 ─── FETCH DASHBOARD CARD DETAIL (${cardType.toUpperCase()}) ───`);
   try {
     console.log(`🌐 [Network] GET /api/v1/dashboard-cards/${cardType}/${issueId}`);
-    
+
     const response = await api.get(`/api/v1/dashboard-cards/${cardType}/${issueId}`);
 
     console.log('✅ [Success] Detail data received successfully');
-    
+
     // Map backend fields to frontend format identically to fetchIssueById
     const issue = {
       ...response.data,
@@ -1032,7 +1032,7 @@ export const fetchDashboardCardIssueDetail = async (cardType, issueId) => {
       console.error('🚨 Network Error:', error.message);
     }
     console.error('────────────────────────────────\n');
-    
+
     return {
       success: false,
       error: error.response?.data?.detail || 'Failed to fetch issue detail',
@@ -1048,23 +1048,23 @@ export default {
   logoutUser,
   isAuthenticated,
   getStoredUser,
-  
+
   // Issues
   fetchIssues,
   fetchIssueById,
-  
+
   // Dashboard
   fetchDashboardStats,
-  
+
   // Complaints
   fetchComplaints,
-  
+
   // Sites
   fetchSites,
-  
+
   // Chatbot
   sendChatMessage,
-  
+
   // Health
   checkHealth,
 
@@ -1075,7 +1075,7 @@ export default {
   fetchResolvedIssuesCard,
   fetchEscalatedIssuesCard,
 
-  
+
   fetchResolvedPendingIssuesCard,
   fetchDashboardCardIssueDetail
 };
