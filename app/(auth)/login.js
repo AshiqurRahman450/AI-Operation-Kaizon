@@ -222,8 +222,8 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoImage: {
-    width: width * 1.35,
-    height: (width * 1.35) * (100 / 260), // maintaining aspect ratio approximately
+    width: width * 1.50,
+    height: (width * 1.50) * (100 / 260), // maintaining aspect ratio approximately
     marginBottom: 10,
     alignSelf: 'center',
   },
