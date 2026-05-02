@@ -9,7 +9,8 @@ import {
   ScrollView,
   Animated,
   Easing,
-  Image, 
+  Image,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -33,35 +34,28 @@ export default function LoginScreen() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // ── Premium Entrance Animations ──
+  // ── Entrance Animations ──
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
-  const logoScale = useRef(new Animated.Value(0.9)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
+        duration: 600,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
+        duration: 600,
+        easing: Easing.out(Easing.back(1)),
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim, logoScale]);
+  }, []);
 
   const handleLogin = async () => {
     setValidationError('');
@@ -86,116 +80,109 @@ export default function LoginScreen() {
     }
   };
 
-  // ── High-End Color Palette ──
-  const screenBg = isDark ? '#121212' : '#ffffff'; 
-  const textColor = isDark ? '#ffffff' : '#000000';
-  const mutedColor = isDark ? '#8e8ea0' : '#6e6e80';
-  
+  const bg = isDark ? '#0F172A' : '#F8FAFC';
+  const textColor = isDark ? '#F1F5F9' : '#1E293B';
+  const subTextColor = isDark ? '#94A3B8' : '#64748B';
+  const primaryColor = '#3B82F6';
+  const inputBg = isDark ? '#334155' : '#F1F5F9';
+  const borderColor = isDark ? '#475569' : '#E2E8F0';
+
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={[styles.container, { backgroundColor: screenBg }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
       
-      {/* ── Seamless Theme Toggle ── */}
       <TouchableOpacity
         style={styles.themeToggle}
         onPress={toggleTheme}
         activeOpacity={0.6}
-        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
       >
         <Ionicons
           name={isDark ? 'sunny' : 'moon'} 
           size={24}
-          color={mutedColor}
+          color={subTextColor}
         />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false} 
-        >
-          {/* ── Animated Header ── */}
-          <Animated.View 
-            style={[
-              styles.header,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
-          >
-            {/* 📍 Pure Image - No shadows, no borders, no boxes */}
-            <Animated.View style={{ transform: [{ scale: logoScale }], marginBottom: 32 }}>
+        <View style={styles.staticContent}>
+          <Animated.View style={[styles.mainContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            
+            {/* ── LOGO & TITLES ── */}
+            <View style={styles.logoHeader}>
               <Image
                 source={isDark ? logoDark : logoWhite}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
-            </Animated.View>
-
-            <Text style={[styles.title, { color: textColor }]}>
-              Kairox Ai Opex
-            </Text>
-            <Text style={[styles.subtitle, { color: mutedColor }]}>
-              Industrial Issue Tracking
-            </Text>
-          </Animated.View>
-
-          {/* ── Animated Form ── */}
-          <Animated.View 
-            style={[
-              styles.form,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
-          >
-            <View style={styles.inputGroup}>
-              <Input
-                label="Username"
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter your username"
-                icon="person-outline"
-                autoCapitalize="none"
-              />
+              <Text style={[styles.title, { color: textColor }]}>Kairox Ai Opex</Text>
+              <Text style={[styles.subtitle, { color: subTextColor }]}>Industrial Issue Tracking</Text>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Input
-                label="Password"
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter your password"
-                icon="lock-closed-outline"
-                secureTextEntry
-                autoCapitalize="none"
+            {/* ── FORM ── */}
+            <View style={styles.form}>
+              
+              {/* Username */}
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: subTextColor }]}>USERNAME</Text>
+                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor }]}>
+                  <Ionicons name="person-outline" size={20} color={subTextColor} style={styles.inputIcon} />
+                  <TextInput
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder="Enter your username"
+                    placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                    style={[styles.rawInput, { color: textColor }]}
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: subTextColor }]}>PASSWORD</Text>
+                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor }]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={subTextColor} style={styles.inputIcon} />
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                    secureTextEntry={!showPassword}
+                    style={[styles.rawInput, { color: textColor }]}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={subTextColor} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Error Messages */}
+              {(validationError || error) && (
+                <View style={[styles.errorContainer, { backgroundColor: `${theme.danger}15` }]}>
+                  <Ionicons name="warning" size={18} color={theme.danger} />
+                  <Text style={[styles.errorText, { color: theme.danger }]}>
+                    {validationError || error}
+                  </Text>
+                </View>
+              )}
+
+              {/* Login Button */}
+              <Button
+                title="Continue"
+                onPress={handleLogin}
+                loading={loading}
+                style={styles.loginButton}
               />
+
             </View>
 
-            {(validationError || error) && (
-              <Animated.View style={[styles.errorContainer, { backgroundColor: `${theme.danger}15` }]}>
-                <Ionicons name="warning" size={18} color={theme.danger} />
-                <Text style={[styles.errorText, { color: theme.danger }]}>
-                  {validationError || error}
-                </Text>
-              </Animated.View>
-            )}
-
-            <Button
-              title="Continue" 
-              onPress={handleLogin}
-              loading={loading}
-              style={styles.loginButton}
-            />
+            <View style={{ height: 40 }} />
 
           </Animated.View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -205,72 +192,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 28,
-    justifyContent: 'center', 
-    paddingBottom: 40,
-  },
-  
-  // ── Header ──
-  header: {
-    alignItems: 'center',
-    marginBottom: 56, 
-  },
-  logoImage: {
-    width: 380, // 📍 Cranked up from 200
-    height: 240, // 📍 Cranked up from 100
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: '800',
-    marginBottom: 10,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 17,
-    fontWeight: '400',
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-
-  // ── Form ──
-  form: {
-    width: '100%',
-    maxWidth: 380, 
-    alignSelf: 'center',
-  },
-  inputGroup: {
-    marginBottom: 20, 
-  },
-  
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 14, 
-    marginBottom: 24,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)', 
-  },
-  errorText: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  
-  loginButton: {
-    marginTop: 4,
-    paddingVertical: 16, 
-    borderRadius: 16, 
-  },
-
-  // ── Theme Toggle ──
   themeToggle: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 10 : 20,
@@ -280,4 +201,102 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(128, 128, 128, 0.1)', 
     borderRadius: 20,
   },
+  staticContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  mainContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  
+  // Header
+  logoHeader: {
+    alignItems: 'center',
+    marginBottom: 48,
+  },
+  logoImage: {
+    width: 300,
+    height: 140,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+
+  // Form
+  form: {
+    width: '100%',
+    maxWidth: 400,
+  },
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    height: 60,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  rawInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  eyeIcon: {
+    padding: 8,
+  },
+
+  // Button
+  loginButton: {
+    height: 60,
+    borderRadius: 16,
+    marginTop: 10,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  // Error
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14, 
+    marginBottom: 20,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)', 
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
 });
+
+
