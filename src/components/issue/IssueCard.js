@@ -5,35 +5,13 @@ import { useTheme } from '../../theme/ThemeContext';
 import StatusBadge from '../common/StatusBadge';
 import { formatOverdueText, getDeadlineColor } from '../../utils/overdue';
 
-// ── BOLD PROFESSIONAL STATUS PALETTE ──
-const getStatusTheme = (status, isDark) => {
-  const themes = {
-    OPEN: { base: '#3b82f6' },
-    ASSIGNED: { base: '#8b5cf6' },
-    IN_PROGRESS: { base: '#eab308' },
-    RESOLVED_PENDING_REVIEW: { base: '#f97316' },
-    COMPLETED: { base: '#10a37f' },
-    REOPENED: { base: '#ef4444' },
-    ESCALATED: { base: '#dc2626' },
-  };
-
-  const selected = themes[status] || { base: '#8e8ea0' };
-  const baseColor = selected.base;
-
-  return {
-    accent: baseColor,
-    bgBody: isDark ? `${baseColor}20` : `${baseColor}15`,
-    border: isDark ? `${baseColor}40` : `${baseColor}35`,
-    pillBg: isDark ? `${baseColor}30` : `${baseColor}25`,
-  };
-};
+// ── NEAT MINIMALIST STYLE ──
 
 const IssueCard = ({ issue, onPress }) => {
   const { theme, isDark } = useTheme();
 
   const deadlineText = formatOverdueText(issue.deadline_at, issue.status);
   const deadlineColor = getDeadlineColor(issue.deadline_at, issue.status);
-  const cardTheme = getStatusTheme(issue.status, isDark);
 
   const formatTrackStatus = (statusStr) => {
     if (!statusStr) return '';
@@ -42,60 +20,33 @@ const IssueCard = ({ issue, onPress }) => {
 
   const thumbnailUri = issue.images && issue.images.length > 0 ? issue.images[0].image_url : null;
 
-  // ── Per-theme card surface ──
-  // Dark:  deep slate with a whisper of the accent tint + a glass-edge top highlight
-  // Light: pure white, lifted by a soft directional shadow + faint accent wash
-  const cardBg = isDark
-    ? `${cardTheme.accent}0D`   // ~5% accent over transparent — layered on dark base below
-    : '#ffffff';
-
-  const cardBase = isDark ? '#18181f' : '#ffffff'; // true base (drawn first)
+  // ── Clean neutral card surface ──
+  const cardBg = isDark ? '#1a1a1a' : '#ffffff';
+  const borderColor = isDark ? '#333333' : '#e5e5e5';
+  const shadowColor = isDark ? '#000000' : '#000000';
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
       style={[
         styles.card,
         {
-          // Light: crisp shadow. Dark: accent-tinted shadow for depth.
+          backgroundColor: cardBg,
+          borderColor: borderColor,
+          borderWidth: 1,
           ...Platform.select({
             ios: {
-              shadowColor: isDark ? cardTheme.accent : '#000',
-              shadowOffset: { width: 0, height: isDark ? 6 : 3 },
-              shadowOpacity: isDark ? 0.22 : 0.09,
-              shadowRadius: isDark ? 18 : 10,
+              shadowColor: shadowColor,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isDark ? 0.3 : 0.05,
+              shadowRadius: 8,
             },
-            android: { elevation: isDark ? 6 : 3 },
+            android: { elevation: isDark ? 4 : 2 },
           }),
         }
       ]}
     >
-      {/* ── Base surface layer ── */}
-      <View style={[StyleSheet.absoluteFill, styles.baseSurface, { backgroundColor: cardBase }]} />
-
-      {/* ── Accent tint wash (gives the card its identity colour) ── */}
-      <View style={[StyleSheet.absoluteFill, styles.baseSurface, { backgroundColor: isDark ? `${cardTheme.accent}0F` : `${cardTheme.accent}07` }]} />
-
-      {/* ── Glass-edge top highlight (dark only) ──
-           Simulates the bright top rim of a frosted glass object. */}
-      {isDark && (
-        <View style={styles.glassEdge} />
-      )}
-
-      {/* ── Left accent bar ── */}
-      <View style={[styles.accentBar, { backgroundColor: cardTheme.accent }]} />
-
-      {/* ── Outer border ── */}
-      <View style={[
-        styles.outerBorder,
-        {
-          borderColor: isDark
-            ? `${cardTheme.accent}28`
-            : `${cardTheme.accent}22`,
-        }
-      ]} />
-
       {/* ── Content ── */}
       <View style={styles.contentContainer}>
 
@@ -162,18 +113,14 @@ const IssueCard = ({ issue, onPress }) => {
               <View style={[
                 styles.trackStatusContainer,
                 {
-                  backgroundColor: isDark
-                    ? `${cardTheme.accent}1A`
-                    : `${cardTheme.accent}12`,
-                  borderColor: isDark
-                    ? `${cardTheme.accent}30`
-                    : `${cardTheme.accent}25`,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                  borderColor: isDark ? '#333' : '#e5e5e5',
                 }
               ]}>
-                <View style={[styles.trackStatusDot, { backgroundColor: cardTheme.accent }]} />
+                <View style={[styles.trackStatusDot, { backgroundColor: theme.primary }]} />
                 <Text style={[
                   styles.trackStatusText,
-                  { color: isDark ? `${cardTheme.accent}` : cardTheme.accent }
+                  { color: theme.textSecondary }
                 ]}>
                   {formatTrackStatus(issue.track_status)}
                 </Text>
@@ -186,18 +133,7 @@ const IssueCard = ({ issue, onPress }) => {
             <View style={[
               styles.thumbnailWrapper,
               {
-                borderColor: isDark
-                  ? `${cardTheme.accent}35`
-                  : `${cardTheme.accent}28`,
-                ...Platform.select({
-                  ios: {
-                    shadowColor: cardTheme.accent,
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 6,
-                  },
-                  android: { elevation: 3 },
-                }),
+                borderColor: borderColor,
               }
             ]}>
               <Image
@@ -225,8 +161,8 @@ const IssueCard = ({ issue, onPress }) => {
             </Text>
           </View>
           <View style={styles.actionRow}>
-            <Text style={[styles.actionText, { color: cardTheme.accent }]}>View Details</Text>
-            <Ionicons name="arrow-forward" size={15} color={cardTheme.accent} />
+            <Text style={[styles.actionText, { color: theme.primary }]}>View Details</Text>
+            <Ionicons name="arrow-forward" size={15} color={theme.primary} />
           </View>
         </View>
 
@@ -243,43 +179,10 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  // ── Layered surface system ──
-  baseSurface: {
-    borderRadius: 16,
-  },
-
-  // Thin bright line on the very top of the card — the "glass rim"
-  glassEdge: {
-    position: 'absolute',
-    top: 0,
-    left: 16,
-    right: 16,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderRadius: 1,
-  },
-
-  // 3px solid left accent strip
-  accentBar: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-  },
-
-  // Full card border overlay
-  outerBorder: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-
-  // ── Content ──
+  // ── Thin outer border layer is already applied to the card root ──
+  // Removing absolute base surfaces to clean up the code
   contentContainer: {
-    paddingLeft: 18,   // extra left padding to clear the accent bar
+    paddingLeft: 16,   // Restored normal padding
     paddingRight: 16,
     paddingTop: 14,
     paddingBottom: 14,

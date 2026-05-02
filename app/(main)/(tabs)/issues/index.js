@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+﻿import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ScrollView,
   RefreshControl,
   Platform,
-  ActivityIndicator, // 📍 Added for the infinite scroll loading spinner
+  ActivityIndicator, // ­ƒôì Added for the infinite scroll loading spinner
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,8 +21,8 @@ import {
   fetchIssues, 
   selectAllIssues, 
   selectIssuesLoading,
-  selectIssuesLoadingMore, // 📍 Added
-  selectHasMoreIssues      // 📍 Added
+  selectIssuesLoadingMore, // ­ƒôì Added
+  selectHasMoreIssues      // ­ƒôì Added
 } from '../../../../src/store/slices/issuesSlice';
 import { selectIsOnline } from '../../../../src/store/slices/offlineSlice';
 import IssueCard from '../../../../src/components/issue/IssueCard';
@@ -34,16 +34,7 @@ import FilterModal from '../../../../src/components/modals/FilterModal';
 import { useDebounce } from '../../../../src/hooks/useDebounce';
 import FullScreenSpinner from '../../../../src/components/common/FullScreenSpinner';
 
-// ── PREMIUM STATUS PALETTE FOR CHIPS ──
-const STATUS_COLORS = {
-  OPEN: '#3b82f6',
-  ASSIGNED: '#8b5cf6',
-  IN_PROGRESS: '#eab308',
-  RESOLVED_PENDING_REVIEW: '#f97316',
-  COMPLETED: '#10a37f',
-  REOPENED: '#ef4444',
-  ESCALATED: '#dc2626',
-};
+// Strict 2-color palette relies on theme.primary instead of STATUS_COLORS
 
 const formatStatusText = (status) => {
   if (!status) return '';
@@ -58,7 +49,7 @@ export default function IssuesTabScreen() {
   const allIssues = useSelector(selectAllIssues);
   const loading = useSelector(selectIssuesLoading);
   
-  // 📍 NEW: Track cursor pagination state
+  // ­ƒôì NEW: Track cursor pagination state
   const loadingMore = useSelector(selectIssuesLoadingMore);
   const hasMore = useSelector(selectHasMoreIssues);
   
@@ -80,7 +71,7 @@ export default function IssuesTabScreen() {
 
   const debouncedSearch = useDebounce(searchText, 300);
 
-  // 📍 UPDATED: Initial load explicitly asks for a reset (sends null cursor)
+  // ­ƒôì UPDATED: Initial load explicitly asks for a reset (sends null cursor)
   useEffect(() => {
     if (user) dispatch(fetchIssues({ reset: true }));
   }, [user, dispatch]);
@@ -181,7 +172,7 @@ export default function IssuesTabScreen() {
     });
   }, [allIssues, debouncedSearch, appliedFilters]);
 
-  // 📍 UPDATED: Pull-to-refresh forces a cursor reset
+  // ­ƒôì UPDATED: Pull-to-refresh forces a cursor reset
   const onRefresh = useCallback(async () => {
     if (!isOnline) {
       setToastMessage("Can't refresh while offline");
@@ -210,7 +201,7 @@ export default function IssuesTabScreen() {
     }
   }, [user, isOnline, lastRefresh, dispatch]);
 
-  // 📍 NEW: Trigger infinite scroll load
+  // ­ƒôì NEW: Trigger infinite scroll load
   const handleLoadMore = () => {
     if (!loadingMore && hasMore && isOnline) {
       dispatch(fetchIssues({ reset: false })); // Tells thunk to use stored cursor
@@ -248,8 +239,9 @@ export default function IssuesTabScreen() {
     const textStyle = [styles.activeChipText, { color: theme.text }];
     const iconColor = theme.textSecondary;
 
-    // 📍 DYNAMIC COLOR CHIPS FOR STATUS
+    // ­ƒôì DYNAMIC COLOR CHIPS FOR STATUS
     if (appliedFilters.statuses && appliedFilters.statuses.length > 0) {
+      const STATUS_COLORS = { OPEN: '#3b82f6', ASSIGNED: '#8b5cf6', IN_PROGRESS: '#eab308', RESOLVED_PENDING_REVIEW: '#f97316', COMPLETED: '#10a37f', REOPENED: '#ef4444', ESCALATED: '#dc2626' };
       appliedFilters.statuses.forEach(status => {
         const color = STATUS_COLORS[status] || theme.textSecondary;
         chips.push(
@@ -314,7 +306,7 @@ export default function IssuesTabScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff' }]}>
 
-      {/* ── HEADER ── */}
+      {/* ÔöÇÔöÇ HEADER ÔöÇÔöÇ */}
       <View style={[styles.header, { borderBottomColor: borderColor }]}>
         <View>
           <Text style={[styles.headerTitle, { color: theme.text }]}>All Issues</Text>
@@ -346,7 +338,7 @@ export default function IssuesTabScreen() {
         renderItem={({ item }) => <IssueCard issue={item} onPress={() => handleIssuePress(item)} />}
         contentContainerStyle={styles.listContent}
         
-        // 📍 NEW: Infinite Scroll Props Hooked Up
+        // ­ƒôì NEW: Infinite Scroll Props Hooked Up
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5} 
         ListFooterComponent={
@@ -360,7 +352,7 @@ export default function IssuesTabScreen() {
         ListHeaderComponent={
           <View style={styles.headerComponentWrapper}>
 
-            {/* ── SEARCH & FILTER ROW ── */}
+            {/* ÔöÇÔöÇ SEARCH & FILTER ROW ÔöÇÔöÇ */}
             <View style={styles.searchContainer}>
               <View style={[styles.searchInput, { backgroundColor: inactiveBg, borderColor }]}>
                 <Ionicons name="search" size={18} color={theme.textSecondary} />
@@ -402,7 +394,7 @@ export default function IssuesTabScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* ── ACTIVE FILTER CHIPS ── */}
+            {/* ÔöÇÔöÇ ACTIVE FILTER CHIPS ÔöÇÔöÇ */}
             {hasActiveFilters && (
               <View style={styles.activeFiltersContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activeChipsScroll}>
@@ -414,9 +406,9 @@ export default function IssuesTabScreen() {
               </View>
             )}
 
-            {/* ── RESULTS COUNT ── */}
+            {/* ÔöÇÔöÇ RESULTS COUNT ÔöÇÔöÇ */}
             <View style={styles.resultsHeader}>
-              {/* 📍 UPDATED: Changed to show exactly how many issues are loaded into the app */}
+              {/* ­ƒôì UPDATED: Changed to show exactly how many issues are loaded into the app */}
               <Text style={[styles.resultsCount, { color: theme.textSecondary }]}>
                 {filteredIssues.length} loaded issue{filteredIssues.length !== 1 ? 's' : ''}
               </Text>
@@ -538,7 +530,7 @@ const styles = StyleSheet.create({
 
   listContent: { paddingBottom: 24 },
   
-  // 📍 NEW: Style for the bottom spinner
+  // ­ƒôì NEW: Style for the bottom spinner
   loadingFooter: {
     paddingVertical: 20,
     alignItems: 'center',
