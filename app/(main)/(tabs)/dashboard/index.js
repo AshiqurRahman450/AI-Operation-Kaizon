@@ -384,8 +384,8 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7} style={styles.bellButton}>
-            <Ionicons name="notifications-outline" size={24} color={theme.text} />
+          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7}>
+            <Avatar uri={user?.avatar} name={user?.name} size="small" />
           </TouchableOpacity>
         </View>
       </View>

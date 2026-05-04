@@ -163,190 +163,160 @@ export const getStoredUser = async () => {
 
 /**
  * Fetch all issues using Cursor-Based Pagination
+ * GET /api/v1/issues
+ * Query: ?status_filter= &priority= &site_id= &search= &cursor= &limit=
  */
-
-
-// /**
-//  * Fetch all issues using Cursor-Based Pagination
-//  */
-// export const fetchIssues = async (filters = {}) => {
-//   try {
-//     const queryParams = {};
-
-//     // Map filters to match backend expectations exactly
-//     if (filters.status) queryParams.status_filter = filters.status; 
-//     if (filters.priority) queryParams.priority = filters.priority;
-//     if (filters.site_id) queryParams.site_id = filters.site_id;
-//     if (filters.search) queryParams.search = filters.search;
-
-//     // 📍 THE FIX: Translate Redux cursor to Backend 'skip'
-//     const limit = filters.limit || 10;
-//     const currentSkip = filters.cursor ? parseInt(filters.cursor, 10) : 0;
-
-//     queryParams.skip = currentSkip;
-//     queryParams.limit = limit;
-
-//     // Hit the exact URL that worked for you, passing params as an object
-//     const response = await withRetry(
-//       () => api.get('/api/v1/issues', { params: queryParams }),
-//       { maxRetries: 2 }
-//     );
-
-//     const data = response.data;
-
-//     // Extract the list of issues and total count
-//     const rawItems = data.issues || data.items || [];
-//     const totalItems = data.total || 0;
-
-//     // 📍 Calculate Next Cursor for Redux
-//     const nextSkip = currentSkip + limit;
-//     const hasMore = nextSkip < totalItems;
-//     const nextCursor = hasMore ? nextSkip.toString() : null;
-
-//     // Map backend fields to frontend format
-//     const issues = rawItems.map(issue => ({ 
-//       ...issue,
-//       site: { name: issue.site_name },
-//       raised_by: { name: issue.supervisor_name }
-//     }));
-
-//     return {
-//       success: true,
-//       issues,
-//       next_cursor: nextCursor, // Redux gets the stringified skip value
-//       has_more: hasMore,
-//     };
-//   } catch (error) {
-//     console.error('❌ Fetch issues error:', error.response?.data || error.message);
-//     return {
-//       success: false,
-//       error: error.response?.data?.detail || 'Failed to fetch issues',
-//       issues: [],
-//       next_cursor: null,
-//       has_more: false,
-//     };
-//   }
-// };
-
-
 export const fetchIssues = async (filters = {}) => {
-  // Kairox v3.0: mock-only (user directive). Filters locally.
-  // TODO(backend): restore the real GET /api/v1/issues call below.
-  // eslint-disable-next-line no-console
-  console.warn('[BACKEND-GAP] issues/list: using mock issues (src/mocks/issues.js)');
-  await new Promise((r) => setTimeout(r, 180));
+  console.log('\n📋 ─── FETCH ISSUES ───');
+  try {
+    const queryParams = {};
 
-  let filtered = [...mockIssues];
-  if (filters.status) {
-    filtered = filtered.filter((i) => i.status === filters.status);
-  }
-  if (filters.priority) {
-    filtered = filtered.filter((i) => i.priority === filters.priority);
-  }
-  if (filters.site_id) {
-    filtered = filtered.filter((i) => i.site_id === filters.site_id);
-  }
-  if (filters.search) {
-    const q = String(filters.search).toLowerCase();
-    filtered = filtered.filter(
-      (i) =>
-        (i.title || '').toLowerCase().includes(q) ||
-        (i.description || '').toLowerCase().includes(q)
+    // Map filters to match backend query-param names
+    if (filters.status) queryParams.status_filter = filters.status;
+    if (filters.priority) queryParams.priority = filters.priority;
+    if (filters.site_id) queryParams.site_id = filters.site_id;
+    if (filters.search) queryParams.search = filters.search;
+
+    // Cursor-based pagination
+    queryParams.limit = filters.limit || 10;
+    if (filters.cursor) queryParams.cursor = filters.cursor;
+
+    console.log('📤 [Request] Params:', queryParams);
+    console.log('🌐 [Network] GET /api/v1/issues');
+
+    const response = await withRetry(
+      () => api.get('/api/v1/issues', { params: queryParams }),
+      { maxRetries: 2 }
     );
+
+    const data = response.data;
+
+    // Backend may return { items, issues, next_cursor, has_more, total }
+    const rawItems = data.items || data.issues || [];
+
+    console.log('✅ [Success] Issues received from backend');
+    console.log(`📊 Items count: ${rawItems.length}`);
+    console.log(`👉 Next Cursor: ${data.next_cursor}`);
+    console.log(`🔄 Has More: ${data.has_more}`);
+    console.log('────────────────────────────────\n');
+
+    // Map backend fields to frontend format
+    const issues = rawItems.map((issue) => ({
+      ...issue,
+      site: issue.site || { name: issue.site_name || 'Unknown Site' },
+      raised_by: issue.raised_by || {
+        name: issue.supervisor_name || 'Supervisor',
+      },
+    }));
+
+    return {
+      success: true,
+      issues,
+      next_cursor: data.next_cursor || null,
+      has_more: data.has_more ?? false,
+    };
+  } catch (error) {
+    console.error('\n❌ ─── FETCH ISSUES FAILED ───');
+    if (error.response) {
+      console.error('🚨 Status:', error.response.status);
+      console.error('🚨 Backend Error Data:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('🚨 Network/Axios Error:', error.message);
+    }
+    console.error('────────────────────────────────\n');
+
+    return {
+      success: false,
+      error: error.response?.data?.detail || 'Failed to fetch issues',
+      issues: [],
+      next_cursor: null,
+      has_more: false,
+    };
   }
-
-  const issuesOut = filtered.map((issue) => ({
-    ...issue,
-    site: issue.site || { name: issue.site_name || `Site ${issue.site_id}` },
-    raised_by:
-      issue.raised_by ||
-      { name: issue.supervisor_name || 'Supervisor' },
-  }));
-
-  return {
-    success: true,
-    issues: issuesOut,
-    next_cursor: null,
-    has_more: false,
-  };
 };
-
-// TODO(backend): restore real call once AWS endpoint is live.
-// const _realFetchIssues = async (filters = {}) => {
-//   try {
-//     const queryParams = {};
-//     if (filters.status) queryParams.status_filter = filters.status;
-//     if (filters.priority) queryParams.priority = filters.priority;
-//     if (filters.site_id) queryParams.site_id = filters.site_id;
-//     if (filters.search) queryParams.search = filters.search;
-//     queryParams.limit = filters.limit || 10;
-//     if (filters.cursor) queryParams.cursor = filters.cursor;
-//     const response = await api.get('/api/v1/issues', { params: queryParams });
-//     const data = response.data;
-//     const issues = (data.items || []).map(issue => ({
-//       ...issue,
-//       site: { name: issue.site_name },
-//       raised_by: { name: issue.supervisor_name }
-//     }));
-//     return { success: true, issues, next_cursor: data.next_cursor, has_more: data.has_more };
-//   } catch (error) {
-//     return { success: false, issues: [], next_cursor: null, has_more: false };
-//   }
-// };
-
 
 /**
- * Fetch single issue by ID
+ * Fetch single issue by ID — full detail including images, assignments, complaints count
+ * GET /api/v1/issues/{issue_id}
  */
 export const fetchIssueById = async (issueId) => {
-  // Kairox v3.0: mock-only (user directive).
-  // TODO(backend): restore real GET /api/v1/issues/{issue_id}.
-  // eslint-disable-next-line no-console
-  console.warn(`[BACKEND-GAP] issues/detail: using mock issues for id=${issueId}`);
-  await new Promise((r) => setTimeout(r, 180));
+  console.log(`\n🔎 ─── FETCH ISSUE DETAIL [${issueId}] ───`);
+  try {
+    console.log(`🌐 [Network] GET /api/v1/issues/${issueId}`);
 
-  const raw = mockIssues.find((i) => String(i.id) === String(issueId));
-  if (!raw) return { success: false, error: 'Issue not found' };
+    const response = await api.get(`/api/v1/issues/${issueId}`);
 
-  const issue = {
-    ...raw,
-    site: raw.site || { name: raw.site_name || `Site ${raw.site_id}` },
-    raised_by:
-      raw.raised_by ||
-      { name: raw.supervisor_name || 'Supervisor', avatar: null },
-    images: raw.images || [],
-    call_logs: raw.call_logs || [],
-    complaints_count: raw.complaints_count || 0,
-  };
-  return { success: true, issue };
+    console.log('✅ [Success] Issue detail received from backend');
+
+    const raw = response.data;
+
+    // Map backend fields to frontend format
+    const issue = {
+      ...raw,
+      site: raw.site || { name: raw.site_name || 'Unknown Site' },
+      raised_by: raw.raised_by || {
+        name: raw.supervisor_name || 'Supervisor',
+        avatar: raw.raised_by?.avatar_url || null,
+      },
+      images: raw.images || [],
+      call_logs: raw.call_logs || [],
+      complaints_count: raw.complaints_count ?? 0,
+    };
+
+    return { success: true, issue };
+  } catch (error) {
+    console.error(`\n❌ ─── FETCH ISSUE ${issueId} DETAIL FAILED ───`);
+    if (error.response) {
+      console.error('🚨 Status:', error.response.status);
+      console.error('🚨 Error Data:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('🚨 Network Error:', error.message);
+    }
+    console.error('────────────────────────────────\n');
+
+    return {
+      success: false,
+      error: error.response?.data?.detail || 'Issue not found',
+    };
+  }
 };
 
+/**
+ * Fetch issue timeline — complete audit trail of status changes and actors
+ * GET /api/v1/issues/{issue_id}/timeline
+ */
 export const fetchIssueTimeline = async (issueId) => {
-  // eslint-disable-next-line no-console
-  console.warn(`[BACKEND-GAP] issues/timeline: using mock timeline for id=${issueId}`);
-  // TODO(backend): restore real GET /api/v1/issues/{issue_id}/timeline.
-  await new Promise((r) => setTimeout(r, 120));
-  const raw = mockIssues.find((i) => String(i.id) === String(issueId));
-  if (!raw) return { success: false, timeline: [] };
-  return {
-    success: true,
-    timeline: [
-      {
-        id: `${issueId}-e1`,
-        event_type: 'created',
-        actor_name: raw.raised_by?.name || raw.supervisor_name || 'Supervisor',
-        description: 'Issue raised',
-        created_at: raw.created_at,
-      },
-      {
-        id: `${issueId}-e2`,
-        event_type: 'status_change',
-        actor_name: 'System',
-        description: `Status: ${raw.status}`,
-        created_at: raw.updated_at,
-      },
-    ],
-  };
+  console.log(`\n🕐 ─── FETCH ISSUE TIMELINE [${issueId}] ───`);
+  try {
+    console.log(`🌐 [Network] GET /api/v1/issues/${issueId}/timeline`);
+
+    const response = await api.get(`/api/v1/issues/${issueId}/timeline`);
+
+    const timeline = response.data?.timeline || response.data?.items || response.data || [];
+
+    console.log('✅ [Success] Timeline received from backend');
+    console.log(`📊 Events count: ${Array.isArray(timeline) ? timeline.length : 0}`);
+    console.log('────────────────────────────────\n');
+
+    return {
+      success: true,
+      timeline: Array.isArray(timeline) ? timeline : [],
+    };
+  } catch (error) {
+    console.error(`\n❌ ─── FETCH ISSUE ${issueId} TIMELINE FAILED ───`);
+    if (error.response) {
+      console.error('🚨 Status:', error.response.status);
+      console.error('🚨 Error Data:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('🚨 Network Error:', error.message);
+    }
+    console.error('────────────────────────────────\n');
+
+    return {
+      success: false,
+      timeline: [],
+    };
+  }
 };
 // ==================== DASHBOARD API ====================
 /**
@@ -466,54 +436,52 @@ export const fetchDashboardStats = async () => {
  * Fetch all complaints
  */
 
-export const fetchComplaints = async ({ cursor = null, limit = 20 } = {}) => {
-  // eslint-disable-next-line no-console
-  console.warn('[BACKEND-GAP] complaints/list: using mock complaints');
-  // TODO(backend): restore GET /api/v1/complaints with cursor pagination.
-  await new Promise((r) => setTimeout(r, 140));
+export const fetchComplaints = async ({ cursor = null, limit = 20, status = null, search = null } = {}) => {
+  console.log('\n🚨 ─── FETCH COMPLAINTS ───');
+  try {
+    const params = { limit };
+    if (cursor) params.cursor = cursor;
+    if (status) params.status = status;
+    if (search) params.search = search;
 
-  const currentSkip = cursor ? parseInt(cursor, 10) : 0;
-  const slice = mockComplaints.slice(currentSkip, currentSkip + limit);
-  const enriched = slice.map((c) => {
-    const issue = mockIssues.find((i) => i.id === c.issue_id);
-    const supervisor = mockUsers.find((u) => u.id === c.raised_by_supervisor_id);
-    const solver = c.target_solver_id
-      ? mockUsers.find((u) => u.id === c.target_solver_id)
-      : null;
+    console.log('📤 [Request] Params:', params);
+    console.log('🌐 [Network] GET /api/v1/complaints');
+
+    const response = await api.get('/api/v1/complaints', { params });
+
+    console.log('✅ [Success] Data received from backend');
+    
+    const data = response.data || {};
+    const items = data.items || data.complaints || [];
+    
     return {
-      ...c,
-      issue_title: issue?.title || 'Unknown issue',
-      site_name: issue
-        ? mockSites.find((s) => s.id === issue.site_id)?.name
-        : null,
-      raised_by_name: supervisor?.name,
-      target_solver_name: solver?.name,
+      success: true,
+      complaints: {
+        items: items,
+        next_cursor: data.next_cursor || null,
+        has_more: data.has_more ?? false,
+      },
     };
-  });
-  const nextSkip = currentSkip + limit;
-  const hasMore = nextSkip < mockComplaints.length;
-  return {
-    success: true,
-    complaints: {
-      items: enriched,
-      next_cursor: hasMore ? nextSkip.toString() : null,
-      has_more: hasMore,
-    },
-  };
+  } catch (error) {
+    console.error('\n❌ ─── FETCH COMPLAINTS FAILED ───', error.message);
+    return {
+      success: false,
+      error: error.response?.data?.detail || 'Failed to fetch complaints',
+      complaints: { items: [], next_cursor: null, has_more: false },
+    };
+  }
 };
 
 export const fetchComplaintById = async (id) => {
-  // eslint-disable-next-line no-console
-  console.warn(`[BACKEND-GAP] complaints/detail: using mock complaint id=${id}`);
-  await new Promise((r) => setTimeout(r, 120));
-  const c = mockComplaints.find((x) => String(x.id) === String(id));
-  if (!c) throw new Error('Complaint not found');
-  const issue = mockIssues.find((i) => i.id === c.issue_id);
-  return {
-    ...c,
-    issue_title: issue?.title,
-    site_name: issue ? mockSites.find((s) => s.id === issue.site_id)?.name : null,
-  };
+  console.log(`\n🚨 ─── FETCH COMPLAINT DETAIL [${id}] ───`);
+  try {
+    const response = await api.get(`/api/v1/complaints/${id}`);
+    console.log('✅ [Success] Complaint details received');
+    return response.data;
+  } catch (error) {
+    console.error(`\n❌ ─── FETCH COMPLAINT ${id} FAILED ───`, error.message);
+    throw new Error(error.response?.data?.detail || 'Failed to fetch complaint details');
+  }
 };
 // ==================== SITES API ====================
 
@@ -521,29 +489,46 @@ export const fetchComplaintById = async (id) => {
  * Fetch all sites
  */
 export const fetchSites = async () => {
-  // eslint-disable-next-line no-console
-  console.warn('[BACKEND-GAP] sites/list: using mock sites');
-  await new Promise((r) => setTimeout(r, 140));
-  const enriched = mockSites.map((s) => {
-    const siteIssues = mockIssues.filter((i) => i.site_id === s.id);
-    const active = siteIssues.filter((i) =>
-      ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)
-    ).length;
-    return {
-      ...s,
-      issues_count: siteIssues.length,
-      active_issues: active,
-    };
-  });
-  return { success: true, sites: enriched };
+  console.log('\n🏗️ ─── FETCH SITES ───');
+  try {
+    console.log('🌐 [Network] GET /api/v1/sites/analytics');
+    const response = await api.get('/api/v1/sites/analytics');
+    console.log('✅ [Success] Sites received from backend');
+    const sites = Array.isArray(response.data) ? response.data : (response.data?.sites || response.data?.items || []);
+    console.log(`📊 Sites count: ${sites.length}`);
+    return { success: true, sites };
+  } catch (error) {
+    console.error('\n❌ ─── FETCH SITES FAILED ───', error.message);
+    return { success: false, sites: [], error: error.response?.data?.detail || 'Failed to fetch sites' };
+  }
 };
 
 export const fetchSitesAnalytics = async () => {
-  // eslint-disable-next-line no-console
-  console.warn('[BACKEND-GAP] sites/analytics: using mock sites analytics');
-  await new Promise((r) => setTimeout(r, 140));
-  const { sites } = await fetchSites();
-  return { success: true, sites };
+  console.log('\n📊 ─── FETCH SITES ANALYTICS ───');
+  try {
+    console.log('🌐 [Network] GET /api/v1/sites/analytics');
+    const response = await api.get('/api/v1/sites/analytics');
+    console.log('✅ [Success] Sites analytics received from backend');
+    const sites = Array.isArray(response.data) ? response.data : (response.data?.sites || response.data?.items || []);
+    console.log(`📊 Sites count: ${sites.length}`);
+    return { success: true, sites };
+  } catch (error) {
+    console.error('\n❌ ─── FETCH SITES ANALYTICS FAILED ───', error.message);
+    return { success: false, sites: [], error: error.response?.data?.detail || 'Failed to fetch sites analytics' };
+  }
+};
+
+export const fetchSiteAnalyticsById = async (siteId) => {
+  console.log(`\n🔍 ─── FETCH SITE ANALYTICS [${siteId}] ───`);
+  try {
+    console.log(`🌐 [Network] GET /api/v1/sites/analytics/${siteId}`);
+    const response = await api.get(`/api/v1/sites/analytics/${siteId}`);
+    console.log('✅ [Success] Single site analytics received');
+    return { success: true, site: response.data };
+  } catch (error) {
+    console.error(`\n❌ ─── FETCH SITE ${siteId} ANALYTICS FAILED ───`, error.message);
+    return { success: false, site: null, error: error.response?.data?.detail || 'Failed to fetch site analytics' };
+  }
 };
 
 export const fetchSolversPerformanceAPI = async () => {
@@ -1052,6 +1037,7 @@ export default {
   // Issues
   fetchIssues,
   fetchIssueById,
+  fetchIssueTimeline,
 
   // Dashboard
   fetchDashboardStats,
