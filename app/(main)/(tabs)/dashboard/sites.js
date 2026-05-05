@@ -39,6 +39,7 @@ export default function SitesScreen() {
   const loading = useSelector(selectSitesLoading);
 
   const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -61,14 +62,26 @@ export default function SitesScreen() {
     }
   }, [dispatch, user]);
 
-  // ── SEARCH LOGIC ──
+  // ── FILTER LOGIC ──
   const filteredSites = (sites || []).filter(site => {
-    if (!searchText) return true;
+    // 1. Search Filter
     const searchLower = searchText.toLowerCase();
-    return (
+    const matchesSearch = !searchText || (
       site.name?.toLowerCase().includes(searchLower) ||
       site.location?.toLowerCase().includes(searchLower)
     );
+
+    // 2. Status Filter
+    if (!matchesSearch) return false;
+    if (statusFilter === 'All') return true;
+
+    const health = (site.analytics?.health || 'Healthy').toLowerCase();
+    const filter = statusFilter.toLowerCase();
+    
+    if (filter === 'needs attention') {
+      return health.includes('warning') || health.includes('attention');
+    }
+    return health.includes(filter);
   });
 
   // ── PREMIUM PALETTE ──
@@ -79,28 +92,29 @@ export default function SitesScreen() {
   const primaryBlue = '#3b82f6';
   
   const getHealthColor = health => {
-    switch (health) {
-      case 'Healthy': return '#22c55e';
-      case 'Warning': return '#eab308';
-      case 'Critical': return '#ef4444';
-      default: return theme.textSecondary;
-    }
+    const h = String(health).toLowerCase();
+    if (h.includes('healthy')) return '#10a37f'; // Premium Emerald
+    if (h.includes('warning') || h.includes('attention')) return '#f59e0b'; // Amber
+    if (h.includes('critical')) return '#ef4444'; // Red
+    return theme.textSecondary;
   };
 
   const renderItem = ({ item }) => {
     const { analytics } = item || {};
     const health = analytics?.health || 'HEALTHY';
-    const openIssues = (analytics?.open_issues || 0) + (analytics?.in_progress_issues || 0);
-    const activeSolvers = analytics?.active_solvers || analytics?.assigned_issues || 0;
+    const score = analytics?.score ?? 100;
+    const totalIssues = analytics?.total_issues || 0;
+    const overdueCount = analytics?.overdue_count || 0;
     
-    const isCritical = health.toLowerCase() === 'critical';
-
     return (
       <TouchableOpacity
         activeOpacity={0.7}
         style={[styles.card, { backgroundColor: surfaceColor, borderColor }]}
         onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/site-detail', params: { id: item.id } })}
       >
+        {/* ── HEALTH INDICATOR BAR ── */}
+        <View style={[styles.healthBar, { backgroundColor: getHealthColor(health) }]} />
+
         {/* Top Row: Title, Badge, ID */}
         <View style={styles.cardTopRow}>
           <Text style={[styles.siteName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
@@ -130,17 +144,24 @@ export default function SitesScreen() {
         {/* Bottom Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>OPEN ISSUES</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>SCORE</Text>
             <View style={styles.statValueRow}>
-              <Ionicons name="alert-circle-outline" size={16} color={isCritical ? '#ef4444' : theme.text} />
-              <Text style={[styles.statValue, { color: theme.text }]}>{openIssues}</Text>
+              <Ionicons name="speedometer-outline" size={16} color={getHealthColor(health)} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{score}</Text>
             </View>
           </View>
           <View style={styles.statBlock}>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>ACTIVE SOLVERS</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>TOTAL</Text>
             <View style={styles.statValueRow}>
-              <Ionicons name="build-outline" size={16} color={primaryBlue} />
-              <Text style={[styles.statValue, { color: theme.text }]}>{activeSolvers}</Text>
+              <Ionicons name="list-outline" size={16} color={primaryBlue} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{totalIssues}</Text>
+            </View>
+          </View>
+          <View style={styles.statBlock}>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>OVERDUE</Text>
+            <View style={styles.statValueRow}>
+              <Ionicons name="alert-circle-outline" size={16} color={overdueCount > 0 ? '#ef4444' : theme.text} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{overdueCount}</Text>
             </View>
           </View>
         </View>
@@ -188,15 +209,35 @@ export default function SitesScreen() {
       {/* ── FILTER PILLS ── */}
       <View style={styles.chipsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingRight: 80 }}>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : '#eef2ff' }]}>
-            <Text style={[styles.chipTextActive, { color: primaryBlue }]}>All Sites ({sites.length})</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, styles.chipOutline, { borderColor }]}>
-            <Text style={[styles.chipText, { color: theme.text }]}>Critical ({(sites || []).filter(s=>s.analytics?.health?.toLowerCase() === 'critical').length})</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, styles.chipOutline, { borderColor }]}>
-            <Text style={[styles.chipText, { color: theme.text }]}>Warning ({(sites || []).filter(s=>s.analytics?.health?.toLowerCase() === 'warning').length})</Text>
-          </TouchableOpacity>
+          {['All', 'Healthy', 'Needs Attention', 'Critical'].map((status) => {
+            const isActive = statusFilter === status;
+            const count = status === 'All' 
+              ? sites.length 
+              : (sites || []).filter(s => {
+                  const h = (s.analytics?.health || 'Healthy').toLowerCase();
+                  if (status === 'Needs Attention') return h.includes('warning') || h.includes('attention');
+                  return h.includes(status.toLowerCase());
+                }).length;
+
+            return (
+              <TouchableOpacity 
+                key={status}
+                onPress={() => setStatusFilter(status)}
+                style={[
+                  styles.chip, 
+                  isActive ? styles.chipActive : styles.chipOutline, 
+                  { 
+                    borderColor: isActive ? primaryBlue : borderColor, 
+                    backgroundColor: isActive ? primaryBlue : (isDark ? '#1a1a1a' : '#fff') 
+                  }
+                ]}
+              >
+                <Text style={[isActive ? styles.chipTextActive : styles.chipText, { color: isActive ? '#fff' : theme.text }]}>
+                  {status} ({count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
         <TouchableOpacity style={[styles.sortBtn, { backgroundColor: bgColor }]}>
           <Ionicons name="swap-vertical" size={14} color={theme.textSecondary} />
@@ -296,11 +337,21 @@ const styles = StyleSheet.create({
     borderRadius: 16, 
     borderWidth: 1, 
     padding: 20, 
+    paddingLeft: 24, // Extra padding for the bar
     marginBottom: 16,
+    overflow: 'hidden',
+    position: 'relative',
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6 },
       android: { elevation: 1 },
     }),
+  },
+  healthBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 6,
   },
   
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
