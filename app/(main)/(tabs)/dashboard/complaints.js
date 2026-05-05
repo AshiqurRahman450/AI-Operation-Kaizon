@@ -33,7 +33,8 @@ import {
   setFilters,
   selectIsFetchingNextPage,
   selectHasMoreComplaints,
-  selectComplaintsNextCursor
+  selectComplaintsNextCursor,
+  selectFilters
 } from '../../../../src/store/slices/complaintsSlice';
 
 export default function ComplaintsScreen() {
@@ -113,11 +114,14 @@ export default function ComplaintsScreen() {
     return `${Math.floor(diffHrs / 24)}d ago`;
   };
 
-  // Helper to map status or assign a mock one based on index for aesthetic matching
-  const getStatusText = (status, index) => {
+  const filters = useSelector(selectFilters);
+  const currentStatus = filters.status;
+
+  // ✅ UPDATED: Use item.id for stable mock status mapping
+  const getStatusText = (status, id) => {
     if (status) return status;
     const mockStatuses = ['Pending', 'Investigating', 'Resolved', 'Closed'];
-    return mockStatuses[index % mockStatuses.length];
+    return mockStatuses[id % mockStatuses.length];
   };
 
   const getStatusColor = (status) => {
@@ -140,7 +144,7 @@ export default function ComplaintsScreen() {
   const cardBorderColor = isDark ? '#2a2a2a' : '#f1f5f9';
 
   const renderItem = ({ item, index }) => {
-    const status = getStatusText(item.status, index);
+    const status = getStatusText(item.status, item.id);
     const statusColor = getStatusColor(status);
     
     return (
@@ -201,6 +205,24 @@ export default function ComplaintsScreen() {
     );
   };
 
+  const handleStatusPress = (status) => {
+    dispatch(setFilters({ status: status === 'All' ? null : status }));
+  };
+
+  const FilterChip = ({ label }) => {
+    const isActive = (label === 'All' && !currentStatus) || (currentStatus === label);
+    return (
+      <TouchableOpacity 
+        style={[styles.chip, isActive && styles.chipActive, { backgroundColor: isActive ? primaryBlue : (isDark ? '#262626' : '#f1f5f9') }]}
+        onPress={() => handleStatusPress(label)}
+      >
+        <Text style={[isActive ? styles.chipTextActive : styles.chipText, { color: isActive ? '#fff' : theme.textSecondary }]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   if (loading && complaints.length === 0 && !refreshing) return <Loader message="Loading complaints..." />;
 
   return (
@@ -239,18 +261,11 @@ export default function ComplaintsScreen() {
       {/* ── FILTER PILLS ── */}
       <View style={styles.chipsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          <TouchableOpacity style={[styles.chip, styles.chipActive]}>
-            <Text style={styles.chipTextActive}>All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? '#262626' : '#f1f5f9' }]}>
-            <Text style={[styles.chipText, { color: theme.textSecondary }]}>Pending</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? '#262626' : '#f1f5f9' }]}>
-            <Text style={[styles.chipText, { color: theme.textSecondary }]}>Investigating</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? '#262626' : '#f1f5f9' }]}>
-            <Text style={[styles.chipText, { color: theme.textSecondary }]}>Resolved</Text>
-          </TouchableOpacity>
+          <FilterChip label="All" />
+          <FilterChip label="Pending" />
+          <FilterChip label="Investigating" />
+          <FilterChip label="Resolved" />
+          <FilterChip label="Closed" />
         </ScrollView>
       </View>
 

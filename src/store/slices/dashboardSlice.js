@@ -145,13 +145,13 @@ const dashboardSlice = createSlice({
         state.error = action.payload;
       });
   },
-});
+});const EMPTY_ARRAY = [];
 
 // ✅ ADDED selectIsSolverView EXPORT
 export const selectIsSolverView = (state) => state.dashboard?.isSolverView || false;
 export const selectStats = (state) => state.dashboard?.stats || initialState.stats;
 export const selectAlerts = (state) => state.dashboard?.alerts || initialState.alerts;
-export const selectRecentIssues = (state) => state.dashboard?.recentIssues || [];
+export const selectRecentIssues = (state) => state.dashboard?.recentIssues || EMPTY_ARRAY;
 export const selectCharts = (state) => state.dashboard?.charts || initialState.charts;
 export const selectDashboardLoading = (state) => state.dashboard?.loading || false;
 
