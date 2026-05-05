@@ -21,7 +21,7 @@ const API_BASE_URL = backendUrl;
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, 
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -152,8 +152,87 @@ export const fetchIssueTimeline = async (issueId) => {
 
 export const fetchDashboardStats = async () => {
   try {
-    const response = await api.get('/api/v1/dashboard/stats');
+    const response = await api.get('/api/v1/dashboard');
     return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed' };
+  }
+};
+
+export const fetchSolversPerformanceAPI = async () => {
+  try {
+    const response = await api.get('/api/v1/solvers');
+    // Backend returns { total, solvers: [...] } — extract the array
+    const raw = response.data;
+    const rawSolvers = Array.isArray(raw) ? raw : Array.isArray(raw?.solvers) ? raw.solvers : [];
+
+    // Normalize: backend list endpoint returns SolverListItem (score/label at top level)
+    // but frontend expects SolverWithPerformance shape (performance sub-object).
+    const solvers = rawSolvers.map(solver => {
+      if (solver.performance) return solver; // Already has performance sub-object
+      return {
+        ...solver,
+        performance: {
+          score: solver.score ?? 0,
+          label: solver.label || 'No Rating',
+          label_color: solver.label_color || '#f59e0b',
+          // Fill other defaults for metrics shown in the list
+          active_count: solver.active_count || 0,
+          completed_count: solver.completed_count || 0,
+          complaint_count: solver.complaint_count || 0,
+          completion_rate: solver.completion_rate || 0,
+          on_time_rate: solver.on_time_rate || 0,
+        },
+      };
+    });
+
+    return { success: true, solvers };
+  } catch (error) {
+    return { success: false, solvers: [] };
+  }
+};
+
+// 📍 DASHBOARD CARD ENDPOINTS
+export const fetchResolvedIssuesCard = async (params) => {
+  try {
+    const response = await api.get('/api/v1/dashboard-cards/resolved', { params });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed' };
+  }
+};
+
+export const fetchPendingIssuesCard = async (params) => {
+  try {
+    const response = await api.get('/api/v1/dashboard-cards/pending-issues', { params });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed' };
+  }
+};
+
+export const fetchEscalatedIssuesCard = async (params) => {
+  try {
+    const response = await api.get('/api/v1/dashboard-cards/escalated', { params });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed' };
+  }
+};
+
+export const fetchResolvedPendingIssuesCard = async (params) => {
+  try {
+    const response = await api.get('/api/v1/dashboard-cards/resolved-pending-review', { params });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed' };
+  }
+};
+
+export const fetchDashboardCardIssueDetail = async (cardType, issueId) => {
+  try {
+    const response = await api.get(`/api/v1/dashboard-cards/${cardType}/${issueId}`);
+    return { success: true, issue: response.data };
   } catch (error) {
     return { success: false, error: 'Failed' };
   }
@@ -175,14 +254,45 @@ export const fetchSupervisorById = async (id) => {
 
 // ==================== SITES & OTHERS ====================
 
-export const fetchSites = async () => {
+export const fetchSitesAnalytics = async () => {
   try {
     const response = await api.get('/api/v1/sites/analytics');
-    return { success: true, sites: response.data };
+    // Backend returns { total, sites: [...] } — extract the array
+    const raw = response.data;
+    const rawSites = Array.isArray(raw) ? raw : Array.isArray(raw?.sites) ? raw.sites : [];
+    
+    // Normalize: backend list endpoint returns SiteListItem (score/health at top level)
+    // but frontend expects SiteWithAnalytics shape (analytics sub-object).
+    // Handle both shapes so the frontend always gets a consistent structure.
+    const sites = rawSites.map(site => {
+      if (site.analytics) return site; // Already has analytics sub-object
+      return {
+        ...site,
+        analytics: {
+          health: site.health || 'Healthy',
+          score: site.score ?? 100,
+          total_issues: site.total_issues || 0,
+          open_issues: site.open_issues || 0,
+          assigned_issues: site.assigned_issues || 0,
+          in_progress_issues: site.in_progress_issues || 0,
+          completed_issues: site.completed_issues || 0,
+          escalated_issues: site.escalated_issues || 0,
+          reopened_issues: site.reopened_issues || 0,
+          overdue_count: site.overdue_count || 0,
+          complaints_count: site.complaints_count || 0,
+          solvers: site.solvers || [],
+        },
+      };
+    });
+    
+    return { success: true, sites };
   } catch (error) {
     return { success: false, sites: [] };
   }
 };
+
+// For backward compatibility
+export const fetchSites = fetchSitesAnalytics;
 
 export const fetchComplaints = async (params = {}) => {
   try {
@@ -190,6 +300,15 @@ export const fetchComplaints = async (params = {}) => {
     return { success: true, complaints: response.data };
   } catch (error) {
     return { success: false, complaints: [] };
+  }
+};
+
+export const fetchComplaintById = async (id) => {
+  try {
+    const response = await api.get(`/api/v1/complaints/${id}`);
+    return { success: true, complaint: response.data };
+  } catch (error) {
+    return { success: false, error: 'Not found' };
   }
 };
 
@@ -203,8 +322,30 @@ export const sendChatMessage = async (text, sessionId, currentIssueId, imageUrl,
   }
 };
 
+export const sendChatWithImage = async ({ text, sessionId, imageUri, intent }) => {
+  try {
+    // If imageUri is provided, we might need to upload it first if it's a local path
+    // For now, assuming it's already a URL or the backend handles it.
+    // If it's a local path (starts with file://), you should call uploadImageToImageKit first.
+    let finalImageUrl = imageUri;
+    
+    if (imageUri && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
+      const uploadRes = await uploadImageToImageKit(imageUri);
+      if (uploadRes.success) {
+        finalImageUrl = uploadRes.url;
+      }
+    }
+
+    return await sendChatMessage(text, sessionId, null, finalImageUrl, intent);
+  } catch (error) {
+    console.error("sendChatWithImage error:", error);
+    return { success: false };
+  }
+};
+
 export default {
   loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser,
-  fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats,
-  fetchSupervisors, fetchSupervisorById, fetchSites, fetchComplaints, sendChatMessage
+  fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
+  fetchResolvedIssuesCard, fetchPendingIssuesCard, fetchEscalatedIssuesCard, fetchResolvedPendingIssuesCard, fetchDashboardCardIssueDetail,
+  fetchSupervisors, fetchSupervisorById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage
 };

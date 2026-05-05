@@ -80,7 +80,7 @@ export default function DashboardScreen() {
       dispatch(fetchDashboardData(user));
       dispatch(fetchSolversPerformance(user));
       dispatch(fetchSitesWithAnalytics(user));
-      dispatch(fetchComplaints(user));
+      dispatch(fetchComplaints({ user }));
     }
   }, [user, dispatch]);
 
@@ -114,7 +114,7 @@ export default function DashboardScreen() {
           dispatch(fetchDashboardData(user)),
           dispatch(fetchSolversPerformance(user)),
           dispatch(fetchSitesWithAnalytics(user)),
-          dispatch(fetchComplaints(user))
+          dispatch(fetchComplaints({ user }))
         ]);
       } finally {
         setRefreshing(false);

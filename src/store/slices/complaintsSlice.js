@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   fetchComplaints as fetchComplaintsApi,
   fetchComplaintById as fetchComplaintByIdApi,
@@ -122,7 +122,7 @@ const complaintsSlice = createSlice({
 export const { setFilters, clearFilters, clearCurrentComplaint } = complaintsSlice.actions;
 
 // Selectors
-export const selectAllComplaints = (state) => state.complaints.complaints;
+export const selectAllComplaints = (state) => state.complaints?.complaints || [];
 export const selectCurrentComplaint = (state) => state.complaints.currentComplaint;  // ✅ ADD
 export const selectComplaintsLoading = (state) => state.complaints.loading;
 export const selectComplaintsError = (state) => state.complaints.error;
@@ -131,38 +131,28 @@ export const selectFilters = (state) => state.complaints.filters;
 // 📍 ADDED: Pagination Selectors
 export const selectIsFetchingNextPage = (state) => state.complaints.isFetchingNextPage;
 export const selectHasMoreComplaints = (state) => state.complaints.hasMore;
-export const selectComplaintsNextCursor = (state) => state.complaints.nextCursor;
+export const selectComplaintsNextCursor = (state) => state.complaints?.nextCursor || null;
 
-export const selectFilteredComplaints = createSelector(
-  [(state) => state.complaints.complaints, (state) => state.complaints.filters],
-  (complaints, filters) => {
-    // Safety check to prevent "not iterable" crashes
-    if (!Array.isArray(complaints)) return [];
+export const selectFilteredComplaints = (state) => {
+  const complaints = state.complaints?.complaints || [];
+  const filters = state.complaints?.filters || initialState.filters;
+  
+  // 📍 CHANGED: Safety check to prevent "not iterable" crashes
+  if (!Array.isArray(complaints)) return [];
 
-    let filtered = [...complaints];
-    
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(complaint =>
-        complaint.issue_title?.toLowerCase().includes(searchLower) ||
-        complaint.complaint_details?.toLowerCase().includes(searchLower) ||
-        complaint.id?.toString().includes(searchLower) ||
-        complaint.issue_id?.toString().includes(searchLower) ||
-        complaint.site_name?.toLowerCase().includes(searchLower) ||
-        complaint.supervisor_name?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Status filtering
-    if (filters.status) {
-      const statusLower = filters.status.toLowerCase();
-      filtered = filtered.filter(complaint => {
-        const complaintStatus = (complaint.status || '').toLowerCase();
-        return complaintStatus === statusLower;
-      });
-    }
-    
-    return filtered;
+  let filtered = [...complaints];
+  
+  if (filters.search) {
+    const searchLower = filters.search.toLowerCase();
+    filtered = filtered.filter(complaint =>
+      // 📍 Match exact backend keys for searching
+      complaint.issue_title?.toLowerCase().includes(searchLower) ||
+      complaint.complaint_details?.toLowerCase().includes(searchLower) ||
+      complaint.id?.toString().includes(searchLower) ||
+      complaint.issue_id?.toString().includes(searchLower)
+    );
   }
-);
+  
+  return filtered;
+};
 export default complaintsSlice.reducer;
