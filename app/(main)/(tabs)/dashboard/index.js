@@ -274,7 +274,7 @@ export default function DashboardScreen() {
   const healthCardsData = !isSolverView ? [
     {
       id: 'open',
-      title: 'OPEN ISSUES',
+      title: 'Pending Issues',
       count: stats?.notFixedIssues || 0,
       icon: 'list',
       route: '/(main)/(tabs)/dashboard/not-fixed',
@@ -292,7 +292,7 @@ export default function DashboardScreen() {
     },
     {
       id: 'fixed',
-      title: 'FIXED ITEMS',
+      title: 'Resolved Issues',
       count: stats?.fixedIssues || 0,
       icon: 'shield-checkmark-outline',
       route: '/(main)/(tabs)/dashboard/fixed',
@@ -301,7 +301,7 @@ export default function DashboardScreen() {
     },
     {
       id: 'review',
-      title: 'TO REVIEW',
+      title: 'Awaiting Review',
       count: alerts?.pendingReviews || 0,
       icon: 'clipboard-outline',
       route: '/(main)/(tabs)/dashboard/awaiting_review',

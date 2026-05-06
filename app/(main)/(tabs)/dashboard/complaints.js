@@ -58,7 +58,6 @@ export default function ComplaintsScreen() {
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    // ✅ CHANGED: Wrapped user in an object to match the new thunk signature
     if (user) dispatch(fetchComplaints({ user }));
   }, [user]);
 
@@ -84,7 +83,6 @@ export default function ComplaintsScreen() {
     if (user) {
       try {
         await Promise.allSettled([
-          // ✅ CHANGED: Wrapped user in an object
           dispatch(fetchComplaints({ user }))
         ]);
       } finally {
@@ -96,7 +94,6 @@ export default function ComplaintsScreen() {
     }
   }, [user, isOnline, lastRefresh, dispatch]);
 
-  // ✅ ADDED: Function to trigger the next page fetch
   const handleLoadMore = () => {
     if (!isOnline || isFetchingNextPage || !hasMore || loading) return;
     dispatch(fetchComplaints({ user, cursor: nextCursor }));
@@ -114,10 +111,6 @@ export default function ComplaintsScreen() {
     return `${Math.floor(diffHrs / 24)}d ago`;
   };
 
-  const filters = useSelector(selectFilters);
-  const currentStatus = filters.status;
-
-  // ✅ UPDATED: Use item.id for stable mock status mapping
   const getStatusText = (status, id) => {
     if (status) return status;
     const mockStatuses = ['Pending', 'Investigating', 'Resolved', 'Closed'];
@@ -125,27 +118,26 @@ export default function ComplaintsScreen() {
   };
 
   const getStatusColor = (status) => {
-    const s = String(status).toLowerCase();
-    if (s.includes('pending')) return { bg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7', text: '#d97706' };
-    if (s.includes('investigating')) return { bg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#dbeafe', text: '#2563eb' };
-    if (s.includes('resolved')) return { bg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7', text: '#059669' };
-    if (s.includes('closed')) return { bg: isDark ? 'rgba(107, 114, 128, 0.15)' : '#f3f4f6', text: '#4b5563' };
-    return { bg: isDark ? '#333' : '#f8fafc', text: theme.textSecondary };
+    // Standardize to uniform "Active" color as requested
+    return { 
+      bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fce8ec', 
+      text: '#ef4444' 
+    };
   };
 
   // Premium Palette
   const bgColor = isDark ? '#111111' : '#ffffff';
   const surfaceColor = isDark ? '#1a1a1a' : '#ffffff';
   const borderColor = isDark ? '#333333' : '#f0f0f0';
-  const inactiveBg = isDark ? '#262626' : '#f9f9f9';
   const primaryBlue = '#3b82f6';
   
   const cardBgColor = isDark ? '#1c1c1c' : '#ffffff';
   const cardBorderColor = isDark ? '#2a2a2a' : '#f1f5f9';
 
-  const renderItem = ({ item, index }) => {
-    const status = getStatusText(item.status, item.id);
-    const statusColor = getStatusColor(status);
+  const renderItem = ({ item }) => {
+    // Standardize all active complaints to "ACTIVE" as requested
+    const statusLabel = "ACTIVE";
+    const statusColor = getStatusColor(statusLabel);
     
     return (
       <TouchableOpacity
@@ -159,6 +151,8 @@ export default function ComplaintsScreen() {
         ]}
         onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/complaint-detail', params: { id: item.id } })}
       >
+        <View style={[styles.healthBar, { backgroundColor: statusColor.text }]} />
+
         {/* Top Row: ID & Time */}
         <View style={styles.cardHeader}>
           <Text style={[styles.cardId, { color: theme.textSecondary }]}>CP-{item.id}</Text>
@@ -187,7 +181,7 @@ export default function ComplaintsScreen() {
             </View>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-            <Text style={[styles.statusText, { color: statusColor.text }]}>{status}</Text>
+            <Text style={[styles.statusText, { color: statusColor.text }]}>{statusLabel}</Text>
           </View>
         </View>
         
@@ -201,24 +195,6 @@ export default function ComplaintsScreen() {
           </View>
           <Text style={styles.detailsText}>DETAILS {'>'}</Text>
         </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const handleStatusPress = (status) => {
-    dispatch(setFilters({ status: status === 'All' ? null : status }));
-  };
-
-  const FilterChip = ({ label }) => {
-    const isActive = (label === 'All' && !currentStatus) || (currentStatus === label);
-    return (
-      <TouchableOpacity 
-        style={[styles.chip, isActive && styles.chipActive, { backgroundColor: isActive ? primaryBlue : (isDark ? '#262626' : '#f1f5f9') }]}
-        onPress={() => handleStatusPress(label)}
-      >
-        <Text style={[isActive ? styles.chipTextActive : styles.chipText, { color: isActive ? '#fff' : theme.textSecondary }]}>
-          {label}
-        </Text>
       </TouchableOpacity>
     );
   };
@@ -256,17 +232,6 @@ export default function ComplaintsScreen() {
             <Ionicons name="options-outline" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* ── FILTER PILLS ── */}
-      <View style={styles.chipsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          <FilterChip label="All" />
-          <FilterChip label="Pending" />
-          <FilterChip label="Investigating" />
-          <FilterChip label="Resolved" />
-          <FilterChip label="Closed" />
-        </ScrollView>
       </View>
 
       {/* ── RESULTS HEADER ── */}
@@ -354,12 +319,6 @@ const styles = StyleSheet.create({
   searchTextInput: { flex: 1, fontSize: 15 },
   filterIconWrap: { padding: 4 },
   
-  chipsContainer: { marginBottom: 20 },
-  chip: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 },
-  chipActive: { backgroundColor: '#3b82f6' },
-  chipTextActive: { color: '#ffffff', fontSize: 13, fontWeight: '600' },
-  chipText: { fontSize: 13, fontWeight: '600' },
-
   resultsHeader: { paddingHorizontal: 20, paddingBottom: 14 },
   resultsCount: { fontSize: 11, fontWeight: '700', letterSpacing: 1.0 },
   
@@ -371,13 +330,23 @@ const styles = StyleSheet.create({
   
   card: { 
     padding: 16,
+    paddingLeft: 24,
     borderRadius: 16,
     borderWidth: 1,
+    overflow: 'hidden',
+    position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 6,
     elevation: 1,
+  },
+  healthBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 6,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   cardId: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },

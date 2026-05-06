@@ -4,6 +4,7 @@ import {
   Text, 
   StyleSheet, 
   FlatList, 
+  TextInput,
   TouchableOpacity, 
   RefreshControl,
   Platform,
@@ -116,8 +117,7 @@ export default function EscalatedIssuesScreen() {
   const bgColor = isDark ? '#111111' : '#ffffff';
   const surfaceColor = isDark ? '#1a1a1a' : '#ffffff';
   const borderColor = isDark ? '#333333' : '#f0f0f0';
-  const escalatedAccent = '#eb4c60'; // Match the pinkish-red from image
-  const pillBg = isDark ? '#2a2a2a' : '#f5f5f5';
+  const escalatedAccent = '#eb4c60';
 
   if (loading && issues.length === 0 && !refreshing) {
     return <Loader message="Loading escalated issues..." />;
@@ -131,24 +131,42 @@ export default function EscalatedIssuesScreen() {
   };
 
   const renderEscalationCard = ({ item: issue, index }) => {
-    // In image, the first and 3rd card have red stripe/shield, others have gray.
-    // We'll map 'CRITICAL' priority to red, or alternate if no priority exists to match mockup visually.
     const isCritical = issue.priority === 'CRITICAL' || index % 2 === 0;
     
+    // Robust solver resolution
+    const solverName = issue.solver_name || 
+                       issue.assignments?.[0]?.solver_name || 
+                       issue.solver?.name || 
+                       issue.assigned_to?.name || 
+                       issue.assigned_solver || 
+                       'Unassigned';
+                       
+    const solverId = issue.solver_id || 
+                     issue.assignments?.[0]?.solver_id || 
+                     issue.solver?.id || 
+                     issue.assigned_to?.id || 
+                     issue.id;
+
+    const supervisorName = issue.supervisor_name || issue.raised_by?.name || 'N/A';
+    const supervisorId = issue.raised_by_supervisor_id || issue.raised_by?.id || issue.id;
+
+    const solverAvatar = solverName !== 'Unassigned' ? `https://i.pravatar.cc/150?u=${solverId}` : null;
+    const supervisorAvatar = supervisorName !== 'N/A' ? `https://i.pravatar.cc/150?u=${supervisorId}` : null;
+    
     return (
-      <View style={[styles.cardContainer, { backgroundColor: surfaceColor, shadowColor: isDark ? '#000' : '#000' }]}>
-        {isCritical && <View style={styles.redStripe} />}
+      <View style={[styles.cardContainer, { backgroundColor: surfaceColor, borderColor }]}>
+        <View style={[styles.healthBar, { backgroundColor: isCritical ? '#eb4c60' : '#4b5563' }]} />
         
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconWrap, { backgroundColor: isCritical ? '#fce8ec' : '#f3f4f6' }]}>
+            <View style={[styles.iconWrap, { backgroundColor: isCritical ? (isDark ? 'rgba(235, 76, 96, 0.1)' : '#fce8ec') : (isDark ? '#333' : '#f3f4f6') }]}>
               {isCritical ? (
                 <Ionicons name="shield-outline" size={16} color="#eb4c60" />
               ) : (
-                <Ionicons name="alert-circle-outline" size={18} color="#4b5563" />
+                <Ionicons name="alert-circle-outline" size={18} color={theme.textSecondary} />
               )}
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.issueTitle, { color: theme.text }]} numberOfLines={1}>{issue.title}</Text>
               <View style={styles.locationRow}>
                 <Ionicons name="location-outline" size={12} color={theme.textSecondary} />
@@ -169,7 +187,7 @@ export default function EscalatedIssuesScreen() {
 
         <View style={[styles.reasonBox, { backgroundColor: isDark ? '#262626' : '#f9fafb' }]}>
           <View style={styles.reasonHeaderRow}>
-            <Ionicons name="flash" size={12} color="#60a5fa" />
+            <Ionicons name="flash" size={12} color="#3b82f6" />
             <Text style={styles.reasonLabel}>ESCALATION REASON</Text>
           </View>
           <Text style={[styles.reasonText, { color: theme.textSecondary }]}>
@@ -178,17 +196,23 @@ export default function EscalatedIssuesScreen() {
         </View>
 
         <View style={styles.cardFooter}>
-          <View style={styles.solverInfo}>
-            <Avatar 
-              name={issue.solver_name || 'Unassigned'} 
-              uri={issue.solver_name ? `https://i.pravatar.cc/150?u=${issue.id}` : null}
-              size="small" 
-            />
-            <View style={{ marginLeft: 10 }}>
-              <Text style={styles.solverLabel}>ASSIGNED SOLVER</Text>
-              <Text style={[styles.solverName, { color: issue.solver_name ? theme.text : '#eb4c60' }]}>
-                {issue.solver_name || 'Unassigned'}
-              </Text>
+          <View style={styles.peopleRow}>
+            <View style={styles.personWrap}>
+              <Avatar name={supervisorName} uri={supervisorAvatar} size="small" />
+              <View style={styles.personTextWrap}>
+                <Text style={styles.roleLabel}>RAISED BY</Text>
+                <Text style={[styles.personName, { color: theme.text }]} numberOfLines={1}>{supervisorName}</Text>
+              </View>
+            </View>
+            
+            <View style={[styles.personWrap, { marginLeft: 16 }]}>
+              <Avatar name={solverName} uri={solverAvatar} size="small" />
+              <View style={styles.personTextWrap}>
+                <Text style={styles.roleLabel}>ASSIGNED TO</Text>
+                <Text style={[styles.personName, { color: solverName === 'Unassigned' ? '#eb4c60' : theme.text }]} numberOfLines={1}>
+                  {solverName}
+                </Text>
+              </View>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
@@ -201,15 +225,31 @@ export default function EscalatedIssuesScreen() {
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: bgColor }]}>
       
       {/* ── HEADER ── */}
-      <View style={[styles.header, { backgroundColor: bgColor, borderBottomColor: borderColor }]}>
+      <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.6} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Escalations</Text>
-        
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="funnel-outline" size={20} color={theme.text} />
+          <TouchableOpacity style={styles.bellButton}>
+            <Ionicons name="notifications-outline" size={22} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── SEARCH BAR ── */}
+      <View style={[styles.searchContainer, { backgroundColor: bgColor }]}>
+        <View style={[styles.searchInput, { backgroundColor: surfaceColor, borderColor }]}>
+          <Ionicons name="search" size={20} color={theme.textSecondary} style={{ opacity: 0.7 }} />
+          <TextInput
+            style={[styles.searchTextInput, { color: theme.text }]}
+            placeholder="Search escalations..."
+            placeholderTextColor={theme.textSecondary}
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          <TouchableOpacity style={styles.filterIconWrap}>
+            <Ionicons name="options-outline" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -226,24 +266,6 @@ export default function EscalatedIssuesScreen() {
           </View>
         </View>
         <Text style={[styles.activeCount, { color: theme.text }]}>{filteredIssues.length} Active</Text>
-      </View>
-
-      {/* ── FILTER CHIPS ── */}
-      <View style={styles.chipsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          <TouchableOpacity style={[styles.chip, styles.chipActive]}>
-            <Text style={styles.chipTextActive}>All Active</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: pillBg }]}>
-            <Text style={[styles.chipText, { color: theme.text }]}>Critical</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: pillBg }]}>
-            <Text style={[styles.chipText, { color: theme.text }]}>High Priority</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: pillBg }]}>
-            <Text style={[styles.chipText, { color: theme.text }]}>Unassigned</Text>
-          </TouchableOpacity>
-        </ScrollView>
       </View>
 
       {/* ── LIST HEADER ── */}
@@ -279,13 +301,16 @@ export default function EscalatedIssuesScreen() {
             />
           )
         }
-        // 📍 NEW INFINITE SCROLL PROPS
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           isFetchingNextPage ? (
             <View style={styles.footerLoader}>
               <ActivityIndicator size="small" color={escalatedAccent} />
+            </View>
+          ) : filteredIssues.length > 0 ? (
+            <View style={styles.endFooter}>
+              <Text style={styles.endFooterText}>END OF OPERATIONAL RECORDS</Text>
             </View>
           ) : null
         }
@@ -304,14 +329,30 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
-    paddingTop: Platform.OS === 'android' ? 20 : 10,
-    paddingBottom: 16,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
+      android: { elevation: 2 },
+    }),
   },
   backButton: { padding: 4, marginLeft: -4 },
   headerTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
   headerRight: { width: 32, alignItems: 'flex-end' },
-  filterButton: { padding: 4 },
+  bellButton: { padding: 4 },
+
+  searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 0 },
+  searchInput: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 16, 
+    height: 50, 
+    borderRadius: 25, 
+    borderWidth: 1,
+    gap: 10 
+  },
+  searchTextInput: { flex: 1, fontSize: 15 },
+  filterIconWrap: { padding: 4 },
 
   topSection: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   liveMonitorRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
@@ -321,36 +362,29 @@ const styles = StyleSheet.create({
   systemAlertText: { color: '#ffffff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
   activeCount: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
-  chipsContainer: { marginBottom: 20 },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  chipActive: { backgroundColor: '#3b82f6' },
-  chipTextActive: { color: '#ffffff', fontSize: 13, fontWeight: '600' },
-  chipText: { fontSize: 13, fontWeight: '600' },
-
   listHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 },
   listHeaderLeft: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   listHeaderRight: { fontSize: 10, fontWeight: '600', color: '#eb4c60' },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 16 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 30, gap: 16 },
   
   cardContainer: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
     overflow: 'hidden',
     padding: 16,
-    elevation: 2,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    paddingLeft: 24,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6 },
+      android: { elevation: 1 },
+    }),
   },
-  redStripe: {
+  healthBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3,
-    backgroundColor: '#eb4c60',
+    width: 6,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   cardHeaderLeft: { flexDirection: 'row', flex: 1, gap: 12 },
@@ -367,13 +401,17 @@ const styles = StyleSheet.create({
 
   reasonBox: { borderRadius: 12, padding: 12, marginBottom: 16 },
   reasonHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  reasonLabel: { fontSize: 10, fontWeight: '700', color: '#60a5fa', letterSpacing: 0.5 },
+  reasonLabel: { fontSize: 10, fontWeight: '700', color: '#3b82f6', letterSpacing: 0.5 },
   reasonText: { fontSize: 13, fontStyle: 'italic', lineHeight: 18 },
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  solverInfo: { flexDirection: 'row', alignItems: 'center' },
-  solverLabel: { fontSize: 9, fontWeight: '700', color: '#9ca3af', letterSpacing: 0.5, marginBottom: 2 },
-  solverName: { fontSize: 13, fontWeight: '700' },
+  peopleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  personWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  personTextWrap: { flex: 1 },
+  roleLabel: { fontSize: 8, fontWeight: '700', color: '#9ca3af', letterSpacing: 0.5, marginBottom: 1 },
+  personName: { fontSize: 12, fontWeight: '700' },
 
   footerLoader: { paddingVertical: 20, alignItems: 'center' },
+  endFooter: { paddingVertical: 24, alignItems: 'center' },
+  endFooterText: { fontSize: 10, fontWeight: '600', color: '#9ca3af', letterSpacing: 0.5 },
 });

@@ -196,7 +196,13 @@ export const fetchSolversPerformanceAPI = async () => {
 export const fetchResolvedIssuesCard = async (params) => {
   try {
     const response = await api.get('/api/v1/dashboard-cards/resolved', { params });
-    return { success: true, data: response.data };
+    const data = response.data;
+    const items = (data.items || []).map(issue => ({
+      ...issue,
+      solver_name: issue.solver_name || issue.assignments?.[0]?.solver_name || issue.solver?.name || null,
+      supervisor_name: issue.supervisor_name || issue.raised_by?.name || 'N/A'
+    }));
+    return { success: true, data: { ...data, items } };
   } catch (error) {
     return { success: false, error: 'Failed' };
   }
@@ -205,7 +211,13 @@ export const fetchResolvedIssuesCard = async (params) => {
 export const fetchPendingIssuesCard = async (params) => {
   try {
     const response = await api.get('/api/v1/dashboard-cards/pending-issues', { params });
-    return { success: true, data: response.data };
+    const data = response.data;
+    const items = (data.items || []).map(issue => ({
+      ...issue,
+      solver_name: issue.solver_name || issue.assignments?.[0]?.solver_name || issue.solver?.name || null,
+      supervisor_name: issue.supervisor_name || issue.raised_by?.name || 'N/A'
+    }));
+    return { success: true, data: { ...data, items } };
   } catch (error) {
     return { success: false, error: 'Failed' };
   }
@@ -214,7 +226,13 @@ export const fetchPendingIssuesCard = async (params) => {
 export const fetchEscalatedIssuesCard = async (params) => {
   try {
     const response = await api.get('/api/v1/dashboard-cards/escalated', { params });
-    return { success: true, data: response.data };
+    const data = response.data;
+    const items = (data.items || []).map(issue => ({
+      ...issue,
+      solver_name: issue.solver_name || issue.assignments?.[0]?.solver_name || issue.solver?.name || null,
+      supervisor_name: issue.supervisor_name || issue.raised_by?.name || 'N/A'
+    }));
+    return { success: true, data: { ...data, items } };
   } catch (error) {
     return { success: false, error: 'Failed' };
   }
@@ -223,7 +241,13 @@ export const fetchEscalatedIssuesCard = async (params) => {
 export const fetchResolvedPendingIssuesCard = async (params) => {
   try {
     const response = await api.get('/api/v1/dashboard-cards/resolved-pending-review', { params });
-    return { success: true, data: response.data };
+    const data = response.data;
+    const items = (data.items || []).map(issue => ({
+      ...issue,
+      solver_name: issue.solver_name || issue.assignments?.[0]?.solver_name || issue.solver?.name || null,
+      supervisor_name: issue.supervisor_name || issue.raised_by?.name || 'N/A'
+    }));
+    return { success: true, data: { ...data, items } };
   } catch (error) {
     return { success: false, error: 'Failed' };
   }

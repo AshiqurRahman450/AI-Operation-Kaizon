@@ -144,6 +144,13 @@ export const selectFilteredComplaints = createSelector(
 
     let filtered = complaints;
 
+    // Filter out resolved/closed complaints by default for "Active" view
+    filtered = filtered.filter((complaint) => {
+      const mockStatuses = ['Pending', 'Investigating', 'Resolved', 'Closed'];
+      const status = (complaint.status || mockStatuses[complaint.id % 4]).toLowerCase();
+      return status !== 'resolved' && status !== 'closed';
+    });
+
     if (filters.status) {
       const statusLower = filters.status.toLowerCase();
       filtered = filtered.filter((complaint) => {
