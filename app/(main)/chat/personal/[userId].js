@@ -170,6 +170,21 @@ export default function PersonalChatRoute() {
           data={messages}
           keyExtractor={(m) => m.id}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }]}>
+                <Ionicons name="chatbubbles-outline" size={50} color={theme.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>Secure AI Kaizen Chat</Text>
+              <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
+                This conversation is private. Send a message to {other.name} to start collaborating on operational tasks.
+              </Text>
+              <View style={[styles.securityBadge, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5' }]}>
+                <Ionicons name="lock-closed" size={12} color="#10b981" />
+                <Text style={styles.securityText}>End-to-end encrypted</Text>
+              </View>
+            </View>
+          }
           renderItem={({ item }) => {
             const isOwn = item.from === me?.id;
             if (item.type === MESSAGE_TYPES.BUDGET_CARD) {
@@ -295,6 +310,53 @@ const styles = StyleSheet.create({
   headerName: { fontSize: 15, fontWeight: '700' },
   headerRole: { fontSize: 11, marginTop: 1 },
   list: { padding: 14, flexGrow: 1, gap: 2, paddingBottom: 20 },
+  
+  // Empty State Styles
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    marginTop: 80,
+  },
+  emptyIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 10,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  emptySub: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 30,
+    opacity: 0.7,
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  securityText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#10b981',
+  },
+
   bcWrap: { marginVertical: 4, maxWidth: '78%' },
   left: { alignSelf: 'flex-start' },
   right: { alignSelf: 'flex-end' },
