@@ -9,6 +9,9 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Animated,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +30,298 @@ import {
   togglePinGroupMessage,
   pollGroupSince,
 } from '../../../../src/services/mocks/groupChatMockService';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+/* ─── Animated Header ────────────────────────────────────────────── */
+const AnimatedHeader = ({ group, pinnedCount, showPinned, setShowPinned, onBack, theme, isDark }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const memberCount = group?.member_ids?.length || 0;
+
+  return (
+    <Animated.View
+      style={[
+        styles.header,
+        {
+          backgroundColor: isDark ? '#111827' : '#ffffff',
+          borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        onPress={onBack}
+        testID="group-back"
+        style={styles.backBtn}
+        activeOpacity={0.6}
+      >
+        <Ionicons name="chevron-back" size={22} color={theme.text} />
+      </TouchableOpacity>
+
+      {/* Group icon */}
+      <View style={[styles.headerIconWrap]}>
+        <View style={[styles.headerIcon, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : '#dbeafe' }]}>
+          <Ionicons name="people" size={18} color={theme.primary} />
+        </View>
+        <View style={[styles.onlineDot, { borderColor: isDark ? '#111827' : '#ffffff' }]} />
+      </View>
+
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text style={[styles.headerName, { color: theme.text }]} numberOfLines={1}>
+          {group?.name || 'Ops Team'}
+        </Text>
+        <View style={styles.headerMetaRow}>
+          <View style={[styles.metaBadge, { backgroundColor: isDark ? 'rgba(59,130,246,0.1)' : '#eff6ff' }]}>
+            <Ionicons name="people-outline" size={10} color={theme.primary} />
+            <Text style={[styles.metaBadgeText, { color: theme.primary }]}>{memberCount}</Text>
+          </View>
+          {pinnedCount > 0 && (
+            <View style={[styles.metaBadge, { backgroundColor: isDark ? 'rgba(234,179,8,0.1)' : '#fefce8' }]}>
+              <Ionicons name="bookmark" size={10} color={theme.warning} />
+              <Text style={[styles.metaBadgeText, { color: theme.warning }]}>{pinnedCount}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {pinnedCount > 0 && (
+        <TouchableOpacity
+          onPress={() => setShowPinned((v) => !v)}
+          testID="group-pinned-toggle"
+          style={[
+            styles.pinnedToggle,
+            {
+              backgroundColor: showPinned
+                ? (isDark ? 'rgba(59,130,246,0.15)' : '#dbeafe')
+                : 'transparent',
+            },
+          ]}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={showPinned ? 'bookmark' : 'bookmark-outline'}
+            size={18}
+            color={showPinned ? theme.primary : theme.textSecondary}
+          />
+        </TouchableOpacity>
+      )}
+    </Animated.View>
+  );
+};
+
+/* ─── Pinned Drawer ──────────────────────────────────────────────── */
+const PinnedDrawer = ({ pinnedMessages, theme, isDark }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-40)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 70, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.pinBar,
+        {
+          backgroundColor: isDark ? 'rgba(59,130,246,0.08)' : '#eff6ff',
+          borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <View style={styles.pinHeader}>
+        <View style={[styles.pinIconBg, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : '#dbeafe' }]}>
+          <Ionicons name="bookmark" size={12} color={theme.primary} />
+        </View>
+        <Text style={[styles.pinHeaderText, { color: theme.primary }]}>Pinned Decisions</Text>
+        <View style={[styles.pinCount, { backgroundColor: theme.primary }]}>
+          <Text style={styles.pinCountText}>{pinnedMessages.length}</Text>
+        </View>
+      </View>
+      {pinnedMessages.map((m, idx) => (
+        <View
+          key={m.id}
+          style={[
+            styles.pinItem,
+            {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
+              borderLeftColor: theme.primary,
+            },
+            idx > 0 && { marginTop: 6 },
+          ]}
+        >
+          <Text style={[styles.pinItemText, { color: theme.text }]} numberOfLines={2}>
+            {m.text}
+          </Text>
+        </View>
+      ))}
+    </Animated.View>
+  );
+};
+
+/* ─── Empty State ────────────────────────────────────────────────── */
+const EmptyState = ({ theme, isDark }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.emptyContainer,
+        { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+      ]}
+    >
+      <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? '#1e293b' : '#eff6ff' }]}>
+        <View style={[styles.emptyIconInner, { backgroundColor: isDark ? '#253349' : '#dbeafe' }]}>
+          <Ionicons name="people" size={36} color={theme.primary} />
+        </View>
+      </View>
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>Ops Team Hub</Text>
+      <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
+        Collaborate with Supervisors and the MD.{'\n'}All operational decisions happen here.
+      </Text>
+      <View style={[styles.securityBadge, { backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#ecfdf5' }]}>
+        <Ionicons name="shield-checkmark" size={12} color="#10b981" />
+        <Text style={styles.securityText}>Secure Group Channel</Text>
+      </View>
+    </Animated.View>
+  );
+};
+
+/* ─── Message Row ────────────────────────────────────────────────── */
+const MessageRow = ({ item, isOwn, isPinned, senderName, canPin, onPin, theme, isDark }) => (
+  <View style={[styles.row, isOwn ? styles.rowOwn : styles.rowOther]}>
+    <ChatBubble
+      text={item.text}
+      isOwn={isOwn}
+      senderName={senderName}
+      showSender={!isOwn}
+      ts={item.ts}
+    />
+    {canPin && (
+      <TouchableOpacity
+        onPress={() => onPin(item.id)}
+        style={[
+          styles.pinBtn,
+          isPinned && {
+            backgroundColor: isDark ? 'rgba(59,130,246,0.12)' : '#eff6ff',
+          },
+        ]}
+        testID={`pin-${item.id}`}
+        activeOpacity={0.6}
+      >
+        <Ionicons
+          name={isPinned ? 'bookmark' : 'bookmark-outline'}
+          size={13}
+          color={isPinned ? theme.primary : theme.textSecondary + '80'}
+        />
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
+/* ─── Input Bar ──────────────────────────────────────────────────── */
+const InputBar = ({ text, setText, onSend, sending, theme, isDark }) => {
+  const hasText = text.trim().length > 0;
+  const sendScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(sendScale, {
+      toValue: hasText ? 1 : 0.85,
+      friction: 5,
+      tension: 100,
+      useNativeDriver: true,
+    }).start();
+  }, [hasText]);
+
+  return (
+    <View
+      style={[
+        styles.inputBar,
+        {
+          backgroundColor: isDark ? '#111827' : '#ffffff',
+          borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.inputWrap,
+          {
+            backgroundColor: isDark ? '#1e2738' : '#f3f4f6',
+            borderColor: hasText
+              ? (isDark ? 'rgba(59,130,246,0.3)' : 'rgba(37,99,235,0.2)')
+              : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
+          },
+        ]}
+      >
+        <TextInput
+          style={[styles.input, { color: theme.text }]}
+          placeholder="Message the Ops Team..."
+          placeholderTextColor={theme.textSecondary + '80'}
+          value={text}
+          onChangeText={setText}
+          multiline
+          testID="group-input"
+        />
+      </View>
+      <Animated.View style={{ transform: [{ scale: sendScale }] }}>
+        <TouchableOpacity
+          onPress={onSend}
+          disabled={!hasText || sending}
+          style={[
+            styles.sendBtn,
+            {
+              backgroundColor: hasText ? theme.primary : (isDark ? '#1e2738' : '#e5e7eb'),
+              shadowColor: hasText ? theme.primary : 'transparent',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: hasText ? 0.3 : 0,
+              shadowRadius: 8,
+              elevation: hasText ? 4 : 0,
+            },
+          ]}
+          testID="group-send"
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="send"
+            size={16}
+            color={hasText ? '#fff' : theme.textSecondary}
+            style={{ marginLeft: 2 }}
+          />
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════ */
 
 /**
  * Ops Team group chat (Kairox §14).
@@ -97,7 +392,10 @@ export default function OpsGroupRoute() {
       return;
     }
     const res = await togglePinGroupMessage(me, messageId);
-    if (res.success) setGroup(res.group);
+    if (res.success) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setGroup(res.group);
+    }
   };
 
   const senderName = (fromId) => {
@@ -110,161 +408,190 @@ export default function OpsGroupRoute() {
     .map((pid) => messages.find((m) => m.id === pid))
     .filter(Boolean);
 
+  const canPin = me?.role === 'manager';
+
   return (
     <RoleGuard action="view:opsGroupChat">
-      <SafeAreaView edges={['top']} style={[styles.safe, { backgroundColor: theme.background }]}>
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={() => router.back()} testID="group-back">
-            <Ionicons name="chevron-back" size={22} color={theme.text} />
-          </TouchableOpacity>
-          <View style={[styles.headerIcon, { backgroundColor: theme.primaryLight }]}>
-            <Ionicons name="people" size={18} color={theme.primary} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={[styles.headerName, { color: theme.text }]}>{group?.name || 'Ops Team'}</Text>
-            <Text style={[styles.headerSub, { color: theme.textSecondary }]} numberOfLines={1}>
-              {group?.member_ids?.length || 0} members · {(group?.pinned_ids || []).length} pinned
-            </Text>
-          </View>
-          {pinnedMessages.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setShowPinned((v) => !v)}
-              testID="group-pinned-toggle"
-              style={{ padding: 4 }}
-            >
-              <Ionicons
-                name={showPinned ? 'bookmark' : 'bookmark-outline'}
-                size={20}
-                color={theme.primary}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+      <SafeAreaView edges={['top']} style={[styles.safe, { backgroundColor: isDark ? '#0f1419' : '#ffffff' }]}>
+        <AnimatedHeader
+          group={group}
+          pinnedCount={pinnedMessages.length}
+          showPinned={showPinned}
+          setShowPinned={setShowPinned}
+          onBack={() => router.back()}
+          theme={theme}
+          isDark={isDark}
+        />
 
         {/* Pinned messages drawer */}
         {showPinned && pinnedMessages.length > 0 && (
-          <View style={[styles.pinBar, { backgroundColor: theme.primaryLight, borderBottomColor: theme.border }]}>
-            <View style={styles.pinHeader}>
-              <Ionicons name="bookmark" size={14} color={theme.primary} />
-              <Text style={[styles.pinHeaderText, { color: theme.primary }]}>Pinned decisions</Text>
-            </View>
-            {pinnedMessages.map((m) => (
-              <Text key={m.id} style={[styles.pinItem, { color: theme.text }]} numberOfLines={2}>
-                · {m.text}
-              </Text>
-            ))}
-          </View>
+          <PinnedDrawer pinnedMessages={pinnedMessages} theme={theme} isDark={isDark} />
         )}
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={(m) => m.id}
-            contentContainerStyle={styles.list}
-            renderItem={({ item }) => {
-              if (item.type === 'ai_summary') {
-                return <AIMonthlySummary summary={item.summary} period={item.period} />;
-              }
-              const isOwn = item.from === me?.id;
-              const isPinned = (group?.pinned_ids || []).includes(item.id);
-              return (
-                <View style={[styles.row, isOwn ? styles.rowOwn : styles.rowOther]}>
-                  <ChatBubble
-                    text={item.text}
+          <View style={[styles.chatArea, { backgroundColor: isDark ? '#0f1419' : '#f8fafc' }]}>
+            <FlatList
+              ref={listRef}
+              data={messages}
+              keyExtractor={(m) => m.id}
+              contentContainerStyle={styles.list}
+              ListEmptyComponent={<EmptyState theme={theme} isDark={isDark} />}
+              renderItem={({ item }) => {
+                if (item.type === 'ai_summary') {
+                  return <AIMonthlySummary summary={item.summary} period={item.period} />;
+                }
+                const isOwn = item.from === me?.id;
+                const isPinned = (group?.pinned_ids || []).includes(item.id);
+                return (
+                  <MessageRow
+                    item={item}
                     isOwn={isOwn}
+                    isPinned={isPinned}
                     senderName={senderName(item.from)}
-                    showSender={!isOwn}
-                    ts={item.ts}
+                    canPin={canPin}
+                    onPin={onPin}
+                    theme={theme}
+                    isDark={isDark}
                   />
-                  {me?.role === 'manager' && (
-                    <TouchableOpacity
-                      onPress={() => onPin(item.id)}
-                      style={styles.pinBtn}
-                      testID={`pin-${item.id}`}
-                    >
-                      <Ionicons
-                        name={isPinned ? 'bookmark' : 'bookmark-outline'}
-                        size={14}
-                        color={isPinned ? theme.primary : theme.textSecondary}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            }}
-          />
-
-          <View style={[styles.inputBar, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  backgroundColor: theme.inputBackground,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Message the Ops Team..."
-              placeholderTextColor={theme.textSecondary + '99'}
-              value={text}
-              onChangeText={setText}
-              multiline
-              testID="group-input"
+                );
+              }}
             />
-            <TouchableOpacity
-              onPress={onSend}
-              disabled={!text.trim() || sending}
-              style={[
-                styles.sendBtn,
-                { backgroundColor: text.trim() ? theme.primary : isDark ? '#333' : '#e5e5e5' },
-              ]}
-              testID="group-send"
-            >
-              <Ionicons name="send" size={16} color={text.trim() ? '#fff' : theme.textSecondary} />
-            </TouchableOpacity>
           </View>
+
+          <InputBar
+            text={text}
+            setText={setText}
+            onSend={onSend}
+            sending={sending}
+            theme={theme}
+            isDark={isDark}
+          />
         </KeyboardAvoidingView>
       </SafeAreaView>
     </RoleGuard>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   STYLES
+   ═══════════════════════════════════════════════════════════════════ */
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+
+  /* ── Header ───────────────────────────── */
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: 6,
   },
-  headerIcon: {
-    width: 34, height: 34, borderRadius: 17,
+  backBtn: {
+    width: 36, height: 36, borderRadius: 12,
     justifyContent: 'center', alignItems: 'center',
   },
-  headerName: { fontSize: 15, fontWeight: '700' },
-  headerSub: { fontSize: 11, marginTop: 1 },
-  pinBar: {
-    padding: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+  headerIconWrap: { position: 'relative' },
+  headerIcon: {
+    width: 40, height: 40, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
   },
-  pinHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  pinHeaderText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase' },
-  pinItem: { fontSize: 12, marginTop: 4, lineHeight: 17 },
-  list: { padding: 14, flexGrow: 1, paddingBottom: 20 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 2 },
+  onlineDot: {
+    position: 'absolute', bottom: -1, right: -1,
+    width: 12, height: 12, borderRadius: 6,
+    backgroundColor: '#22c55e',
+    borderWidth: 2,
+  },
+  headerName: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  headerMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
+  metaBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6,
+  },
+  metaBadgeText: { fontSize: 10, fontWeight: '700' },
+  pinnedToggle: {
+    width: 36, height: 36, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+
+  /* ── Pinned Drawer ────────────────────── */
+  pinBar: {
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  pinHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  pinIconBg: {
+    width: 24, height: 24, borderRadius: 7,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  pinHeaderText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', flex: 1 },
+  pinCount: {
+    width: 20, height: 20, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  pinCountText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  pinItem: {
+    padding: 10, borderRadius: 10,
+    borderLeftWidth: 3,
+  },
+  pinItemText: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
+
+  /* ── Chat Area ────────────────────────── */
+  chatArea: { flex: 1 },
+  list: { padding: 16, flexGrow: 1, paddingBottom: 20, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 1 },
   rowOwn: { justifyContent: 'flex-end' },
   rowOther: { justifyContent: 'flex-start' },
-  pinBtn: { padding: 4 },
+  pinBtn: {
+    padding: 6, borderRadius: 8,
+  },
+
+  /* ── Empty State ──────────────────────── */
+  emptyContainer: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: 40, marginTop: 60,
+  },
+  emptyIconCircle: {
+    width: 100, height: 100, borderRadius: 50,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 24,
+  },
+  emptyIconInner: {
+    width: 72, height: 72, borderRadius: 36,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 22, fontWeight: '800', marginBottom: 10,
+    textAlign: 'center', letterSpacing: -0.5,
+  },
+  emptySub: {
+    fontSize: 14, textAlign: 'center', lineHeight: 21,
+    marginBottom: 24, opacity: 0.7,
+  },
+  securityBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, gap: 6,
+  },
+  securityText: {
+    fontSize: 10, fontWeight: '700', textTransform: 'uppercase',
+    letterSpacing: 0.5, color: '#10b981',
+  },
+
+  /* ── Input Bar ────────────────────────── */
   inputBar: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
-    padding: 10, borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row', alignItems: 'flex-end', gap: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderTopWidth: 1,
+  },
+  inputWrap: {
+    flex: 1, borderWidth: 1, borderRadius: 22,
+    paddingHorizontal: 16,
   },
   input: {
-    flex: 1, borderWidth: 1, borderRadius: 20,
-    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10,
-    fontSize: 14, maxHeight: 100,
+    fontSize: 14.5, paddingTop: 11, paddingBottom: 11,
+    maxHeight: 100, letterSpacing: 0.1,
   },
   sendBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     justifyContent: 'center', alignItems: 'center',
   },
 });
