@@ -123,84 +123,82 @@ const formatId = (id) => {
 };
 
 // ── INLINE ISSUE CARD ──
-const IssueCard = ({ issue, onPress, isDark }) => {
-  const cfg = STATUS_CONFIG[issue.status] || {
-    label: issue.status,
-    icon: 'ellipse-outline',
-    color: '#6b7280',
-    bgColor: 'transparent',
-    filled: false,
-    borderColor: '#6b7280',
+const IssueCard = ({ issue, onPress, isDark, theme }) => {
+  const getStatusColor = (status) => {
+    const s = String(status).toUpperCase();
+    if (s === 'OPEN') return { bg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7', text: '#d97706' };
+    if (s === 'IN_PROGRESS' || s === 'ASSIGNED') return { bg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#dbeafe', text: '#2563eb' };
+    if (s === 'COMPLETED' || s === 'FIXED') return { bg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7', text: '#059669' };
+    if (s === 'ESCALATED') return { bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', text: '#dc2626' };
+    return { bg: isDark ? '#333' : '#f8fafc', text: theme.textSecondary || '#6b7280' };
   };
 
-  const cardBg = isDark ? '#242424' : '#ffffff';
-  const subtitleColor = isDark ? '#9ca3af' : '#6b7280';
-  const titleColor = isDark ? '#f9fafb' : '#111827';
-  const dividerColor = isDark ? '#2e2e2e' : '#f3f4f6';
-  const badgeTextColor = cfg.filled ? cfg.color : cfg.color;
-  const badgeBg = cfg.filled
-    ? isDark
-      ? 'rgba(239,68,68,0.15)'
-      : cfg.bgColor
-    : 'transparent';
+  const statusColor = getStatusColor(issue.status);
+  const cardBgColor = isDark ? '#1c1c1c' : '#ffffff';
+  const cardBorderColor = isDark ? '#2a2a2a' : '#f1f5f9';
+  const primaryBlue = '#3b82f6';
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
-      <View style={[styles.card, { backgroundColor: cardBg, borderBottomColor: dividerColor }]}>
-        {/* Left Status Border */}
-        <View style={[styles.cardBorder, { backgroundColor: cfg.borderColor }]} />
+    <TouchableOpacity
+      activeOpacity={0.8}
+      style={[
+        styles.card,
+        {
+          backgroundColor: cardBgColor,
+          borderColor: cardBorderColor,
+        }
+      ]}
+      onPress={onPress}
+    >
+      <View style={[styles.healthBar, { backgroundColor: statusColor.text }]} />
 
-        {/* Card Content */}
-        <View style={styles.cardContent}>
-          {/* Top Row: ID + Status Badge */}
-          <View style={styles.cardTopRow}>
-            <Text style={[styles.cardId, { color: subtitleColor }]}>{formatId(issue.id)}</Text>
-            <View style={[styles.statusBadge, { backgroundColor: badgeBg, borderColor: cfg.filled ? badgeBg : 'transparent' }]}>
-              <Ionicons name={cfg.icon} size={13} color={badgeTextColor} />
-              <Text style={[styles.statusBadgeText, { color: badgeTextColor }]}>{cfg.label.toUpperCase()}</Text>
-            </View>
-          </View>
-
-          {/* Title */}
-          <Text style={[styles.cardTitle, { color: titleColor }]} numberOfLines={1}>
-            {issue.title}
+      {/* Top Row: ID & Time */}
+      <View style={styles.cardHeader}>
+        <Text style={[styles.cardId, { color: theme.textSecondary }]}>{formatId(issue.id)}</Text>
+        <View style={styles.timeWrap}>
+          <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+          <Text style={[styles.cardDate, { color: theme.textSecondary }]}>
+            {getTimeAgo(issue.created_at)}
           </Text>
+        </View>
+      </View>
 
-          {/* Location + Assignee Row */}
-          <View style={styles.cardMetaRow}>
-            <View style={styles.cardMetaItem}>
-              <Ionicons name="location-outline" size={13} color={subtitleColor} />
-              <Text style={[styles.cardMetaText, { color: subtitleColor }]} numberOfLines={1}>
-                {issue.site_name || issue.site?.name || 'Unknown Site'}
-              </Text>
-            </View>
-            <View style={styles.cardMetaItem}>
-              <Ionicons name="person-outline" size={13} color={subtitleColor} />
-              <Text
-                style={[styles.cardMetaText, { color: subtitleColor }]}
-                numberOfLines={1}
-              >
-                {issue.supervisor_role || 'Supervisor'}
-              </Text>
-            </View>
-          </View>
+      {/* Title */}
+      <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
+        {issue.title || 'Untitled Issue'}
+      </Text>
 
-          {/* Bottom Row: Solver + Time */}
-          <View style={styles.cardBottomRow}>
-            <View style={styles.solverRow}>
-              <Avatar
-                uri={issue.solver_avatar || issue.assigned_to_avatar}
-                name={issue.solver_name || issue.assigned_to_name}
-                size="small"
-              />
-              <Text style={[styles.solverLabel, { color: subtitleColor }]}>ASSIGNED SOLVER</Text>
-            </View>
-            <View style={styles.timeRow}>
-              <Ionicons name="time-outline" size={13} color={subtitleColor} />
-              <Text style={[styles.timeText, { color: subtitleColor }]}>{getTimeAgo(issue.created_at)}</Text>
-            </View>
+      {/* User Info & Status */}
+      <View style={styles.userRow}>
+        <View style={styles.userInfo}>
+          {/* <Avatar
+            name={issue.supervisor_name || issue.supervisor?.name || 'System User'}
+            uri={issue.supervisor_avatar || (issue.id ? `https://i.pravatar.cc/150?u=${issue.id}` : null)}
+            size="small"
+          /> */}
+          <View style={styles.userText}>
+            <Text style={[styles.userName, { color: theme.text }]} numberOfLines={1}>
+              {issue.supervisor_name || issue.supervisor?.name || 'System User'}
+            </Text>
+            <Text style={styles.userRole}>{issue.supervisor_role || 'Field Worker'}</Text>
           </View>
         </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
+          <Text style={[styles.statusText, { color: statusColor.text }]}>{issue.status}</Text>
+        </View>
+      </View>
+
+      <View style={[styles.cardDivider, { backgroundColor: cardBorderColor }]} />
+
+      {/* Location & Details */}
+      <View style={styles.locationRow}>
+        <View style={styles.locationLeft}>
+          <Ionicons name="location-outline" size={16} color={primaryBlue} />
+          <Text style={styles.locationText} numberOfLines={1}>
+            {issue.site_name || issue.site?.name || 'Unknown Site'}
+          </Text>
+        </View>
+        <Text style={styles.detailsText}>DETAILS {'>'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -345,22 +343,6 @@ export default function IssuesTabScreen() {
       <View style={[styles.header, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff', borderBottomColor: borderColor }]}>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Field Issues</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={() => setShowFilterModal(true)}
-            style={[styles.headerFilterBtn, { backgroundColor: activeFilterCount > 0 ? theme.primary : 'transparent' }]}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="funnel-outline"
-              size={20}
-              color={activeFilterCount > 0 ? '#fff' : theme.text}
-            />
-            {activeFilterCount > 0 && (
-              <View style={styles.filterDot}>
-                <Text style={styles.filterDotText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7}>
             <Avatar uri={user?.avatar} name={user?.name} size="medium" />
           </TouchableOpacity>
@@ -371,7 +353,7 @@ export default function IssuesTabScreen() {
         data={tabFilteredIssues}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <IssueCard issue={item} onPress={() => handleIssuePress(item)} isDark={isDark} />
+          <IssueCard issue={item} onPress={() => handleIssuePress(item)} isDark={isDark} theme={theme} />
         )}
         contentContainerStyle={[styles.listContent, { backgroundColor: cardAreaBg }]}
         onEndReached={handleLoadMore}
@@ -397,10 +379,29 @@ export default function IssuesTabScreen() {
                   onChangeText={setSearchText}
                 />
                 {searchText !== '' && (
-                  <TouchableOpacity onPress={() => setSearchText('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <TouchableOpacity onPress={() => setSearchText('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 8 }}>
                     <Ionicons name="close-circle" size={16} color={isDark ? '#4b5563' : '#9ca3af'} />
                   </TouchableOpacity>
                 )}
+                
+                <View style={[styles.searchDivider, { backgroundColor: isDark ? '#333' : '#e5e7eb' }]} />
+                
+                <TouchableOpacity
+                  onPress={() => setShowFilterModal(true)}
+                  style={styles.inlineFilterBtn}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="funnel-outline"
+                    size={17}
+                    color={activeFilterCount > 0 ? theme.primary : isDark ? '#6b7280' : '#9ca3af'}
+                  />
+                  {activeFilterCount > 0 && (
+                    <View style={styles.filterDotSmall}>
+                      <Text style={styles.filterDotTextSmall}>{activeFilterCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -542,7 +543,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14 },
+  searchInput: { 
+    flex: 1, 
+    fontSize: 14,
+    // Fix for web black focus outline
+    ...Platform.select({
+      web: { outlineWidth: 0 }
+    })
+  },
+  searchDivider: {
+    width: 1,
+    height: 20,
+    marginHorizontal: 4,
+  },
+  inlineFilterBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  filterDotSmall: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#ef4444',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  filterDotTextSmall: { color: '#fff', fontSize: 7, fontWeight: '800' },
 
   // Tabs
   tabsContainer: { borderBottomWidth: StyleSheet.hairlineWidth },
@@ -574,61 +608,48 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    flexDirection: 'row',
+    padding: 16,
+    paddingLeft: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 6,
+    elevation: 1,
     marginHorizontal: 16,
     marginTop: 10,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  cardBorder: { width: 4, flexShrink: 0 },
-  cardContent: { flex: 1, padding: 14, gap: 6 },
-
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  healthBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 6,
   },
-  cardId: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  cardId: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+  timeWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardDate: { fontSize: 11 },
 
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  statusBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
+  cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 16, letterSpacing: -0.2 },
 
-  cardTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.2, marginTop: 1 },
+  userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  userInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  userText: { justifyContent: 'center' },
+  userName: { fontSize: 13, fontWeight: '700' },
+  userRole: { fontSize: 11, color: '#9ca3af' },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusText: { fontSize: 10, fontWeight: '700' },
 
-  cardMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  cardMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-  cardMetaText: { fontSize: 12, fontWeight: '500', flexShrink: 1 },
+  cardDivider: { height: StyleSheet.hairlineWidth, marginBottom: 16 },
 
-  cardBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.06)',
-  },
-  solverRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  solverLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  timeText: { fontSize: 11, fontWeight: '500' },
+  locationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  locationLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  locationText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
+  detailsText: { fontSize: 11, fontWeight: '700', color: '#3b82f6', letterSpacing: 0.5 },
 
   listContent: { paddingBottom: 30 },
   loadingFooter: { paddingVertical: 20, alignItems: 'center' },

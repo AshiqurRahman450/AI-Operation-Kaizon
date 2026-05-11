@@ -55,7 +55,7 @@ export default function SolversScreen() {
       return;
     }
     if (!user) return;
-    
+
     setRefreshing(true);
     try {
       await Promise.allSettled([
@@ -69,7 +69,7 @@ export default function SolversScreen() {
   // ── FILTER LOGIC ──
   const filteredSolvers = useMemo(() => {
     let list = solvers || [];
-    
+
     // Search Filter
     const q = searchText.trim().toLowerCase();
     if (q) {
@@ -80,7 +80,7 @@ export default function SolversScreen() {
         return name.includes(q) || role.includes(q) || skills.includes(q);
       });
     }
-    
+
     return list;
   }, [searchText, solvers]);
 
@@ -90,7 +90,7 @@ export default function SolversScreen() {
   const borderColor = isDark ? '#2e2e2e' : '#f0f0f0';
   const searchBg = isDark ? '#262626' : '#f8fafc';
   const primaryBlue = '#3b82f6';
-  
+
   const getScoreColor = (score, backendColor) => {
     if (backendColor) return backendColor;
     if (score >= 75) return '#10a37f'; // Premium Emerald
@@ -103,14 +103,14 @@ export default function SolversScreen() {
     const score = perf.score || 0;
     const scoreColor = getScoreColor(score, perf.label_color);
     const label = perf.label || 'NO RATING';
-    
+
     const activeCount =
       (perf.in_progress_count || 0) +
       (perf.assigned_not_started_count || 0) +
       (perf.reopened_count || 0) +
       (perf.active_count || 0);
 
-    const displaySkills = item.skills?.length > 0 
+    const displaySkills = item.skills?.length > 0
       ? item.skills.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
       : 'Professional Solver';
 
@@ -186,7 +186,7 @@ export default function SolversScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: bgColor }]}>
-      
+
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <View style={styles.headerLeft}>
@@ -260,12 +260,12 @@ export default function SolversScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    paddingVertical: 16, 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
@@ -277,29 +277,29 @@ const styles = StyleSheet.create({
   backButton: { padding: 4, marginLeft: -4 },
   headerTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
   filterBtn: { padding: 4 },
-  
+
   searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
-  searchInputWrapper: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 16, 
-    height: 50, 
-    borderRadius: 25, 
-    gap: 10 
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    height: 50,
+    borderRadius: 25,
+    gap: 10
   },
   searchTextInput: { flex: 1, fontSize: 15 },
- 
+
   resultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   resultsCount: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
   resultsSub: { fontSize: 11 },
 
   listContent: { paddingHorizontal: 16, paddingBottom: 30 },
-  
-  card: { 
-    borderRadius: 16, 
-    borderWidth: 1, 
-    padding: 20, 
-    paddingLeft: 24, 
+
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    paddingLeft: 24,
     marginBottom: 16,
     overflow: 'hidden',
     position: 'relative',
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 6,
   },
-  
+
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   nameSection: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   siteName: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, flex: 1 },
@@ -325,13 +325,13 @@ const styles = StyleSheet.create({
   healthText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
   idPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   idPillText: { fontSize: 10, fontWeight: '700' },
-  
+
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   siteLocation: { fontSize: 13 },
-  
+
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   dividerLine: { height: StyleSheet.hairlineWidth, flex: 1 },
-  
+
   statsRow: { flexDirection: 'row' },
   statBlock: { flex: 1 },
   statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },

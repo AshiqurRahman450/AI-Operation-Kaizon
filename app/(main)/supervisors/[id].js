@@ -136,7 +136,7 @@ export default function SupervisorDetailScreen() {
           style={styles.chatButton} 
           onPress={() => router.push(`/chat/personal/${supervisor.id}`)}
         >
-          <Ionicons name="chatbubble-ellipses" size={24} color={theme.primary} />
+          <Ionicons name="chatbubble-ellipses" size={24} color={isDark ? '#ffffff' : theme.primary} />
         </TouchableOpacity>
       </View>
 
@@ -192,7 +192,7 @@ export default function SupervisorDetailScreen() {
             {assignedSites.length > 0 ? (
               assignedSites.map((site, index) => (
                 <View key={site.id || index}>
-                  <TouchableOpacity style={styles.siteRow} onPress={() => site.id && router.push(`/(main)/projectflow/${site.id}`)}>
+                  <TouchableOpacity style={styles.siteRow} onPress={() => site.id && router.push({ pathname: '/(main)/site-detail', params: { id: site.id } })}>
                     <View style={[styles.siteIconCircle, { backgroundColor: theme.primary + '15' }]}>
                       <Ionicons name="location" size={18} color={theme.primary} />
                     </View>

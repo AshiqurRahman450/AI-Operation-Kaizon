@@ -22,7 +22,7 @@ import { sites as mockSites } from '../../../src/mocks/sites';
  * Reached from MD Dashboard → Customer's MD card.
  */
 export default function CustomerMDCardRoute() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const router = useRouter();
 
   const customerMDs = mockUsers
@@ -73,7 +73,7 @@ export default function CustomerMDCardRoute() {
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.primary} />
+              <Ionicons name="chatbubble-ellipses-outline" size={20} color={isDark ? '#ffffff' : theme.primary} />
             </TouchableOpacity>
           )}
         />

@@ -51,7 +51,7 @@ export default function SitesScreen() {
   const onRefresh = useCallback(async () => {
     if (!user) return;
     setRefreshing(true);
-    
+
     try {
       // 📍 FIX: Promise.allSettled guarantees the spinner spins until totally done
       await Promise.allSettled([
@@ -77,7 +77,7 @@ export default function SitesScreen() {
 
     const health = (site.analytics?.health || 'Healthy').toLowerCase();
     const filter = statusFilter.toLowerCase();
-    
+
     if (filter === 'needs attention') {
       return health.includes('warning') || health.includes('attention');
     }
@@ -90,7 +90,7 @@ export default function SitesScreen() {
   const borderColor = isDark ? '#2e2e2e' : '#f0f0f0';
   const searchBg = isDark ? '#262626' : '#f8fafc';
   const primaryBlue = '#3b82f6';
-  
+
   const getHealthColor = health => {
     const h = String(health).toLowerCase();
     if (h.includes('healthy')) return '#10a37f'; // Premium Emerald
@@ -105,7 +105,7 @@ export default function SitesScreen() {
     const score = analytics?.score ?? 100;
     const totalIssues = analytics?.total_issues || 0;
     const overdueCount = analytics?.overdue_count || 0;
-    
+
     return (
       <TouchableOpacity
         activeOpacity={0.7}
@@ -176,7 +176,7 @@ export default function SitesScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: bgColor }]}>
-      
+
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <View style={styles.headerLeft}>
@@ -214,24 +214,24 @@ export default function SitesScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingRight: 80 }}>
           {['All', 'Healthy', 'Needs Attention', 'Critical'].map((status) => {
             const isActive = statusFilter === status;
-            const count = status === 'All' 
-              ? sites.length 
+            const count = status === 'All'
+              ? sites.length
               : (sites || []).filter(s => {
-                  const h = (s.analytics?.health || 'Healthy').toLowerCase();
-                  if (status === 'Needs Attention') return h.includes('warning') || h.includes('attention');
-                  return h.includes(status.toLowerCase());
-                }).length;
+                const h = (s.analytics?.health || 'Healthy').toLowerCase();
+                if (status === 'Needs Attention') return h.includes('warning') || h.includes('attention');
+                return h.includes(status.toLowerCase());
+              }).length;
 
             return (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={status}
                 onPress={() => setStatusFilter(status)}
                 style={[
-                  styles.chip, 
-                  isActive ? styles.chipActive : styles.chipOutline, 
-                  { 
-                    borderColor: isActive ? primaryBlue : borderColor, 
-                    backgroundColor: isActive ? primaryBlue : (isDark ? '#1a1a1a' : '#fff') 
+                  styles.chip,
+                  isActive ? styles.chipActive : styles.chipOutline,
+                  {
+                    borderColor: isActive ? primaryBlue : borderColor,
+                    backgroundColor: isActive ? primaryBlue : (isDark ? '#1a1a1a' : '#fff')
                   }
                 ]}
               >
@@ -292,12 +292,12 @@ export default function SitesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    paddingVertical: 16, 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
@@ -310,18 +310,18 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
   placeholder: { width: 32 },
   filterBtn: { padding: 4 },
-  
+
   searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
-  searchInputWrapper: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 16, 
-    height: 50, 
-    borderRadius: 25, 
-    gap: 10 
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    height: 50,
+    borderRadius: 25,
+    gap: 10
   },
   searchTextInput: { flex: 1, fontSize: 15 },
-  
+
   chipsContainer: { marginBottom: 16, position: 'relative' },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   chipOutline: { borderWidth: 1, backgroundColor: 'transparent' },
@@ -335,11 +335,11 @@ const styles = StyleSheet.create({
   resultsSub: { fontSize: 11 },
 
   listContent: { paddingHorizontal: 16, paddingBottom: 30 },
-  
-  card: { 
-    borderRadius: 16, 
-    borderWidth: 1, 
-    padding: 20, 
+
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
     paddingLeft: 24, // Extra padding for the bar
     marginBottom: 16,
     overflow: 'hidden',
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 6,
   },
-  
+
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
   siteName: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, flex: 1, marginRight: 8 },
   badgeIdRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -365,13 +365,13 @@ const styles = StyleSheet.create({
   healthText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
   idPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   idPillText: { fontSize: 10, fontWeight: '700' },
-  
+
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   siteLocation: { fontSize: 13 },
-  
+
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   dividerLine: { height: StyleSheet.hairlineWidth, flex: 1 },
-  
+
   statsRow: { flexDirection: 'row' },
   statBlock: { flex: 1 },
   statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },

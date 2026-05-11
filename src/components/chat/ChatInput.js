@@ -63,7 +63,7 @@ const ChatInput = ({ onSend, showCamera = true, userRole }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
-  
+
   // 📍 NEW: Voice State
   const [isListening, setIsListening] = useState(false);
 
@@ -400,11 +400,11 @@ const ChatInput = ({ onSend, showCamera = true, userRole }) => {
               !showCamera && { paddingLeft: 14 },
             ]}
             placeholder={
-              isListening 
+              isListening
                 ? 'Listening... Speak now.'
                 : isOnline
-                ? 'Type to experience the power of AI'
-                : 'Waiting for connection...'
+                  ? 'Type to experience the power of AI'
+                  : 'Waiting for connection...'
             }
             editable={isOnline && !isListening}
             placeholderTextColor={isListening ? '#10a37f' : (isDark ? '#4a4a4a' : '#b0b0b8')}
@@ -421,7 +421,7 @@ const ChatInput = ({ onSend, showCamera = true, userRole }) => {
 
         {/* 📍 TWO BUTTON LAYOUT: MIC AND SEND */}
         <View style={styles.rightActionButtons}>
-          
+
           {/* 1. Mic Button */}
           <TouchableOpacity
             style={[
@@ -430,10 +430,10 @@ const ChatInput = ({ onSend, showCamera = true, userRole }) => {
             ]}
             onPress={toggleListening}
           >
-            <Ionicons 
-              name={isListening ? "stop" : "mic"} 
-              size={20} 
-              color={isListening ? "#fff" : theme.textSecondary} 
+            <Ionicons
+              name={isListening ? "stop" : "mic"}
+              size={20}
+              color={isListening ? "#fff" : theme.textSecondary}
             />
           </TouchableOpacity>
 
@@ -447,7 +447,7 @@ const ChatInput = ({ onSend, showCamera = true, userRole }) => {
               <Ionicons name="arrow-up" size={16} color={canSend ? sendIconColor : theme.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
-          
+
         </View>
 
       </View>

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TextInput, 
-  TouchableOpacity, 
-  Image, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  Image,
   RefreshControl,
   Platform,
   ActivityIndicator,
@@ -26,10 +26,10 @@ import Toast from '../../../../src/components/common/Toast';
 import FullScreenSpinner from '../../../../src/components/common/FullScreenSpinner';
 
 // ✅ IMPORTED NEW PAGINATION SELECTORS
-import { 
-  fetchComplaints, 
-  selectFilteredComplaints, 
-  selectComplaintsLoading, 
+import {
+  fetchComplaints,
+  selectFilteredComplaints,
+  selectComplaintsLoading,
   setFilters,
   selectIsFetchingNextPage,
   selectHasMoreComplaints,
@@ -41,17 +41,17 @@ export default function ComplaintsScreen() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
   const dispatch = useDispatch();
-  
+
   const user = useSelector(selectCurrentUser);
   const complaints = useSelector(selectFilteredComplaints);
   const loading = useSelector(selectComplaintsLoading);
   const isOnline = useSelector(selectIsOnline);
-  
+
   // ✅ GRAB PAGINATION STATE FROM REDUX
   const isFetchingNextPage = useSelector(selectIsFetchingNextPage);
   const hasMore = useSelector(selectHasMoreComplaints);
   const nextCursor = useSelector(selectComplaintsNextCursor);
-  
+
   const [searchText, setSearchText] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
@@ -119,9 +119,9 @@ export default function ComplaintsScreen() {
 
   const getStatusColor = (status) => {
     // Standardize to uniform "Active" color as requested
-    return { 
-      bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fce8ec', 
-      text: '#ef4444' 
+    return {
+      bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fce8ec',
+      text: '#ef4444'
     };
   };
 
@@ -130,7 +130,7 @@ export default function ComplaintsScreen() {
   const surfaceColor = isDark ? '#1a1a1a' : '#ffffff';
   const borderColor = isDark ? '#333333' : '#f0f0f0';
   const primaryBlue = '#3b82f6';
-  
+
   const cardBgColor = isDark ? '#1c1c1c' : '#ffffff';
   const cardBorderColor = isDark ? '#2a2a2a' : '#f1f5f9';
 
@@ -138,14 +138,14 @@ export default function ComplaintsScreen() {
     // Standardize all active complaints to "ACTIVE" as requested
     const statusLabel = "ACTIVE";
     const statusColor = getStatusColor(statusLabel);
-    
+
     return (
       <TouchableOpacity
         activeOpacity={0.8}
         style={[
-          styles.card, 
-          { 
-            backgroundColor: cardBgColor, 
+          styles.card,
+          {
+            backgroundColor: cardBgColor,
             borderColor: cardBorderColor,
           }
         ]}
@@ -163,12 +163,12 @@ export default function ComplaintsScreen() {
             </Text>
           </View>
         </View>
-        
+
         {/* Title */}
         <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
           {item.issue_title || 'Untitled Complaint'}
         </Text>
-        
+
         {/* User Info & Status */}
         <View style={styles.userRow}>
           <View style={styles.userInfo}>
@@ -184,9 +184,9 @@ export default function ComplaintsScreen() {
             <Text style={[styles.statusText, { color: statusColor.text }]}>{statusLabel}</Text>
           </View>
         </View>
-        
+
         <View style={[styles.cardDivider, { backgroundColor: cardBorderColor }]} />
-        
+
         {/* Location & Details */}
         <View style={styles.locationRow}>
           <View style={styles.locationLeft}>
@@ -203,7 +203,7 @@ export default function ComplaintsScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: bgColor }]}>
-      
+
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.6} style={styles.backButton}>
@@ -251,10 +251,10 @@ export default function ComplaintsScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <EmptyState 
-            icon="shield-checkmark-outline" 
-            title="All Clear" 
-            message="There are no active complaints matching your search." 
+          <EmptyState
+            icon="shield-checkmark-outline"
+            title="All Clear"
+            message="There are no active complaints matching your search."
           />
         }
         showsVerticalScrollIndicator={false}
@@ -292,11 +292,11 @@ export default function ComplaintsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     ...Platform.select({
@@ -308,30 +308,30 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
   headerRight: { width: 32, alignItems: 'flex-end' },
   bellButton: { padding: 4 },
-  
+
   searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
-  searchInput: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 16, 
-    height: 50, 
-    borderRadius: 25, 
+  searchInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 1,
-    gap: 10 
+    gap: 10
   },
   searchTextInput: { flex: 1, fontSize: 15 },
   filterIconWrap: { padding: 4 },
-  
+
   resultsHeader: { paddingHorizontal: 20, paddingBottom: 14 },
   resultsCount: { fontSize: 11, fontWeight: '700', letterSpacing: 1.0 },
-  
+
   listContent: { paddingHorizontal: 16, paddingBottom: 30, gap: 14 },
-  
+
   footerLoader: { paddingVertical: 20, alignItems: 'center' },
   endFooter: { paddingVertical: 24, alignItems: 'center' },
   endFooterText: { fontSize: 10, fontWeight: '600', color: '#9ca3af', letterSpacing: 0.5 },
-  
-  card: { 
+
+  card: {
     padding: 16,
     paddingLeft: 24,
     borderRadius: 16,
@@ -355,9 +355,9 @@ const styles = StyleSheet.create({
   cardId: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
   timeWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardDate: { fontSize: 11 },
-  
+
   cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 16, letterSpacing: -0.2 },
-  
+
   userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   userInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   userText: { justifyContent: 'center' },
@@ -365,9 +365,9 @@ const styles = StyleSheet.create({
   userRole: { fontSize: 11, color: '#9ca3af' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: '700' },
-  
+
   cardDivider: { height: StyleSheet.hairlineWidth, marginBottom: 16 },
-  
+
   locationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   locationLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   locationText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
