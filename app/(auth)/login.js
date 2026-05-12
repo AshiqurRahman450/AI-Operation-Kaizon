@@ -282,7 +282,7 @@ export default function LoginScreen() {
   // ─── Color Palette ─────────────────────────────────────────────────────────
   const C = {
     bg: isDark ? '#000000' : '#FFFFFF',
-    cardBg: isDark ? '#0A0A0A' : '#FFFFFF',
+    cardBg: isDark ? '#111111' : '#FFFFFF',
     cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)',
     text: isDark ? '#F8FAFC' : '#0F172A',
     subText: isDark ? '#94A3B8' : '#64748B',
@@ -290,13 +290,13 @@ export default function LoginScreen() {
     icon: isDark ? '#64748B' : '#94A3B8',
     primary: '#3B82F6',
     primaryDeep: '#2563EB',
-    inputBg: isDark ? '#171717' : '#F1F5F9',
-    border: isDark ? '#262626' : '#E2E8F0',
+    inputBg: isDark ? '#1C1C1E' : '#F1F5F9',
+    border: isDark ? '#2C2C2E' : '#E2E8F0',
     danger: '#EF4444',
     dangerBg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
-    orb1: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(203, 213, 225, 0.6)',
-    orb2: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(241, 245, 249, 0.8)',
-    orb3: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(226, 232, 240, 0.7)',
+    orb1: isDark ? 'rgba(148, 163, 184, 0.45)' : 'rgba(203, 213, 225, 0.6)',
+    orb2: isDark ? 'rgba(100, 116, 139, 0.35)' : 'rgba(241, 245, 249, 0.8)',
+    orb3: isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(226, 232, 240, 0.7)',
   };
 
   // ─── Entrance & Idle Animations ──────────────────────────────────────────
