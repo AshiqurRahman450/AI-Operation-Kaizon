@@ -102,6 +102,15 @@ export const getStoredUser = async () => {
   }
 };
 
+export const fetchMDContactCard = async () => {
+  try {
+    const response = await api.get('/api/v1/me/md');
+    return { success: true, md: response.data?.md || response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch MD contact' };
+  }
+};
+
 // ==================== ISSUES API (BACKEND) ====================
 
 export const fetchIssues = async (filters = {}) => {
@@ -474,6 +483,50 @@ export const fetchSupervisorById = async (id) => {
   return { success: true, supervisor };
 };
 
+// ==================== CUSTOMER MD API ====================
+
+export const fetchCustomerMDs = async () => {
+  console.warn('[BACKEND-GAP] customer-mds/list: using temporary mock data to simulate API');
+  const cmds = mockUsers.filter(u => u.role === 'customer_md').map(cmd => {
+    // Simulate pending_escalations count
+    const pending_escalations = Math.floor(Math.random() * 3); 
+    // Format sites as objects like backend would
+    const sites = (cmd.sites || []).map(sid => mockSites.find(s => s.id === sid)).filter(Boolean);
+    
+    return {
+      ...cmd,
+      sites,
+      stats: { pending_escalations }
+    };
+  });
+  
+  const response = { data: cmds };
+  console.log('Customer MDs List Response:', JSON.stringify(response.data, null, 2));
+  return { success: true, customerMDs: response.data };
+};
+
+export const fetchCustomerMDById = async (id) => {
+  console.warn(`[BACKEND-GAP] customer-mds/detail for ID ${id}: using temporary mock data to simulate API`);
+  const cmd = mockUsers.find(u => String(u.id) === String(id));
+  if (!cmd) return { success: false, error: 'Not found' };
+
+  const sites = (cmd.sites || []).map(sid => mockSites.find(s => s.id === sid)).filter(Boolean);
+  const mockCmd = {
+    ...cmd,
+    sites,
+    stats: {
+      escalations_received: 14,
+      approved: 10,
+      rejected: 4,
+      total_approved_amount_paise: 25000000 // £250,000.00
+    }
+  };
+
+  const response = { data: mockCmd };
+  console.log(`Customer MD Detail Response for ID ${id}:`, JSON.stringify(response.data, null, 2));
+  return { success: true, cmd: response.data };
+};
+
 // ==================== SITES & OTHERS ====================
 
 export const fetchSitesAnalytics = async () => {
@@ -584,10 +637,10 @@ export const sendChatWithImage = async ({ text, sessionId, imageUri, intent }) =
 };
 
 export default {
-  loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser,
+  loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser, fetchMDContactCard,
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
   fetchResolvedIssuesCard, fetchPendingIssuesCard, fetchEscalatedIssuesCard, fetchResolvedPendingIssuesCard, fetchDashboardCardIssueDetail,
-  fetchSupervisors, fetchSupervisorById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
+  fetchSupervisors, fetchSupervisorById, fetchCustomerMDs, fetchCustomerMDById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
   fetchBudgetRequests, fetchBudgetTotals, classifyBudgetAmount, createBudgetRequest, fetchBudgetBurnRates,
   escApproveBudgetRequest, escRejectBudgetRequest
 

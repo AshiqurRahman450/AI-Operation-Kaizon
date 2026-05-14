@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +15,7 @@ import { useTheme } from '../../../src/theme/ThemeContext';
 import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import Avatar from '../../../src/components/common/Avatar';
 import { backToDashboard } from '../../../src/utils/navigation';
-import { users as mockUsers } from '../../../src/mocks/users';
-import { sites as mockSites } from '../../../src/mocks/sites';
+import { fetchCustomerMDs } from '../../../src/services/api';
 
 /**
  * Customer MD directory (MD-only).
@@ -25,19 +25,34 @@ export default function CustomerMDCardRoute() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
 
-  const customerMDs = mockUsers
-    .filter((u) => u.role === 'customer_md')
-    .map((u) => {
-      const siteNames = (u.sites || [])
-        .map((sid) => mockSites.find((s) => s.id === sid)?.name)
-        .filter(Boolean);
-      return {
-        ...u,
-        sites_label: siteNames.slice(0, 2).join(' · ') +
-          (siteNames.length > 2 ? ` +${siteNames.length - 2}` : ''),
-        sites_count: siteNames.length,
-      };
-    });
+  const [customerMDs, setCustomerMDs] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await fetchCustomerMDs();
+        if (res.success && Array.isArray(res.customerMDs)) {
+          setCustomerMDs(res.customerMDs);
+        }
+      } catch (err) {
+        console.error('Error loading Customer MDs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <RoleGuard action="view:customerMDCard">
@@ -53,29 +68,46 @@ export default function CustomerMDCardRoute() {
           data={customerMDs}
           keyExtractor={(s) => String(s.id)}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
-              activeOpacity={0.7}
-              testID={`customermd-item-${item.id}`}
-              onPress={() => router.push(`/chat/personal/${item.id}`)}
-            >
-              <Avatar name={item.name} uri={item.avatar} size={44} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
-                <Text style={[styles.sub, { color: theme.textSecondary }]} numberOfLines={1}>
-                  {item.company || '—'}
-                </Text>
-                <View style={styles.metaRow}>
-                  <Ionicons name="business-outline" size={12} color={theme.textSecondary} />
-                  <Text style={[styles.metaText, { color: theme.textSecondary }]} numberOfLines={1}>
-                    {item.sites_label || 'No sites assigned'}
+          renderItem={({ item }) => {
+            const rawSites = item.sites;
+            const sitesArr = Array.isArray(rawSites) ? rawSites : [];
+            const siteNames = sitesArr.map(s => typeof s === 'object' ? s.name : s).filter(Boolean);
+            const sitesLabel = siteNames.length > 0 
+              ? (siteNames.slice(0, 2).join(' · ') + (siteNames.length > 2 ? ` +${siteNames.length - 2}` : ''))
+              : 'No sites assigned';
+
+            const pendingEscalations = item.stats?.pending_escalations ?? item.pending_escalations ?? 0;
+
+            return (
+              <TouchableOpacity
+                style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+                activeOpacity={0.7}
+                testID={`customermd-item-${item.id}`}
+                onPress={() => router.push(`/customer-mds/${item.id}`)}
+              >
+                <Avatar name={item.name} uri={item.avatar_url || item.avatar} size={44} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
+                  <Text style={[styles.sub, { color: theme.textSecondary }]} numberOfLines={1}>
+                    {item.company || 'Customer MD'}
                   </Text>
+                  <View style={styles.metaRow}>
+                    <Ionicons name="business-outline" size={12} color={theme.textSecondary} />
+                    <Text style={[styles.metaText, { color: theme.textSecondary }]} numberOfLines={1}>
+                      {sitesLabel}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color={isDark ? '#ffffff' : theme.primary} />
-            </TouchableOpacity>
-          )}
+                {pendingEscalations > 0 ? (
+                  <View style={[styles.badge, { backgroundColor: theme.errorLight || '#fee2e2' }]}>
+                    <Text style={[styles.badgeText, { color: theme.error || '#ef4444' }]}>{pendingEscalations} pending</Text>
+                  </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                )}
+              </TouchableOpacity>
+            );
+          }}
         />
       </SafeAreaView>
     </RoleGuard>
@@ -95,4 +127,6 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12, marginTop: 2 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   metaText: { fontSize: 11, fontWeight: '600', flex: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  badgeText: { fontSize: 11, fontWeight: '700' },
 });
