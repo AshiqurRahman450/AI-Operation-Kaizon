@@ -164,11 +164,11 @@ export const getBudgetTotals = async (user) => {
   const pending = list.filter((b) =>
     ['pending_md', 'escalated_customer_md'].includes(b.status)
   ).length;
-  const approvedSum = list
+  const approved_sum = list
     .filter((b) => b.status === 'approved')
     .reduce((acc, b) => acc + (b.amount || 0), 0);
   const rejectedCount = list.filter((b) => b.status === 'rejected').length;
-  return { count: list.length, pending, approvedSum, rejectedCount };
+  return { count: list.length, pending, approved_sum, rejectedCount };
 };
 
 /**
@@ -228,10 +228,10 @@ export const createBudgetRequest = async (actor, payload) => {
     amount: payload.amount,
     currency: 'INR',
     reason: payload.reason.trim(),
-    status: auto ? 'approved' : 'pending_md',
+    status: auto ? 'approved' : (classification === 'md_plus_customer_md' ? 'md_plus_customer_md' : 'pending_md'),
     auto_approved: auto || undefined,
     md_decision_at: auto ? new Date().toISOString() : undefined,
-    md_decided_by: auto ? { id: 0, name: 'System (auto-approval ≤ ₹10k)' } : undefined,
+    md_decided_by: auto ? { id: 0, name: 'System (auto-approval)' } : undefined,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };

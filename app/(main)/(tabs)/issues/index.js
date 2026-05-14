@@ -233,9 +233,11 @@ export default function IssuesTabScreen() {
 
   const debouncedSearch = useDebounce(searchText, 300);
 
+  const userId = user?.id;
+
   useEffect(() => {
-    if (user) dispatch(fetchIssues({ reset: true }));
-  }, [user, dispatch]);
+    if (userId) dispatch(fetchIssues({ reset: true }));
+  }, [userId, dispatch]);
 
   const realSites = useMemo(() => {
     if (!allIssues) return [];

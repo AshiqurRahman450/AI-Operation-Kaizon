@@ -9,6 +9,8 @@ import notificationsReducer from './slices/notificationsSlice';
 import offlineReducer from './slices/offlineSlice';
 import sitesReducer from "./slices/sitesSlice"
 import performanceReducer from "./slices/performanceSlice"
+import budgetReducer from './slices/budgetSlice';
+
 
 // 1. Combine all your reducers into one app-level reducer
 const appReducer = combineReducers({
@@ -22,6 +24,8 @@ const appReducer = combineReducers({
   offline: offlineReducer,
   sites: sitesReducer,
   performance: performanceReducer,
+  budget: budgetReducer,
+
 });
 
 // 2. Wrap it in a root reducer to intercept actions

@@ -30,6 +30,7 @@ import { selectIsOnline } from '../../../../src/store/slices/offlineSlice';
 import { fetchSolversPerformance, selectAllSolvers } from '../../../../src/store/slices/performanceSlice';
 import { fetchSitesWithAnalytics, selectAllSites } from '../../../../src/store/slices/sitesSlice';
 import { fetchComplaints, selectAllComplaints } from '../../../../src/store/slices/complaintsSlice';
+import { fetchThresholdAlerts, selectThresholdAlerts } from '../../../../src/store/slices/budgetSlice';
 
 import DashboardCard from '../../../../src/components/dashboard/DashboardCard';
 import ChartDownloadButton from '../../../../src/components/dashboard/ChartDownloadButton';
@@ -67,6 +68,9 @@ export default function DashboardScreen() {
   const solvers = useSelector(selectAllSolvers);
   const sitesList = useSelector(selectAllSites);
   const complaintsList = useSelector(selectAllComplaints);
+  const thresholdAlerts = useSelector(selectThresholdAlerts) || [];
+  // For team demo, uncomment below:
+  // const thresholdAlerts = [{ id: 'mock-1' }, { id: 'mock-2' }];
 
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -81,8 +85,11 @@ export default function DashboardScreen() {
       dispatch(fetchSolversPerformance(user));
       dispatch(fetchSitesWithAnalytics(user));
       dispatch(fetchComplaints({ user }));
+      if (currentRole === ROLES.MANAGER) {
+        dispatch(fetchThresholdAlerts());
+      }
     }
-  }, [user, dispatch]);
+  }, [user, dispatch, currentRole]);
 
   const getDeadlineIndicator = (dateString) => {
     if (!dateString) return null;
@@ -114,7 +121,8 @@ export default function DashboardScreen() {
           dispatch(fetchDashboardData(user)),
           dispatch(fetchSolversPerformance(user)),
           dispatch(fetchSitesWithAnalytics(user)),
-          dispatch(fetchComplaints({ user }))
+          dispatch(fetchComplaints({ user })),
+          currentRole === ROLES.MANAGER ? dispatch(fetchThresholdAlerts()) : Promise.resolve()
         ]);
       } finally {
         setRefreshing(false);
@@ -392,6 +400,23 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      
+      {/* ── THRESHOLD ALERTS BANNER ── */}
+      {currentRole === ROLES.MANAGER && thresholdAlerts.length > 0 && (
+        <TouchableOpacity 
+          style={[styles.alertBanner, { backgroundColor: theme.danger }]} 
+          onPress={() => router.push('/budget/analytics')}
+          activeOpacity={0.9}
+        >
+          <View style={styles.alertContent}>
+            <Ionicons name="warning" size={18} color="#fff" />
+            <Text style={styles.alertText}>
+              {thresholdAlerts.length} site{thresholdAlerts.length > 1 ? 's' : ''} have exceeded 80% of monthly budget
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       <ScrollView
         style={styles.scrollArea}
@@ -512,7 +537,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="people-circle-outline"
                       color="#0ea5e9"
-                      onPress={() => router.push('/(main)/chat/group/ops')}
+                      onPress={() => router.push('/(main)/chat/group')}
                     />
                     <DashboardCard
                       title="Site Diary"
@@ -578,7 +603,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="people-circle-outline"
                       color="#0ea5e9"
-                      onPress={() => router.push('/(main)/chat/group/ops')}
+                      onPress={() => router.push('/(main)/chat/group')}
                     />
                     <DashboardCard
                       title="Site Diary"
@@ -825,6 +850,25 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollArea: { flex: 1 },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  alertContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  alertText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
   // ── HEADER ──
   header: {

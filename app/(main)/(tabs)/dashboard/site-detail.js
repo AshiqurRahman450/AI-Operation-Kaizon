@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
-  RefreshControl
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
-import { PieChart } from 'react-native-chart-kit';
+import { PieChart, LineChart } from 'react-native-chart-kit';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useTheme } from '../../../../src/theme/ThemeContext';
@@ -21,6 +22,7 @@ import StatusBadge from '../../../../src/components/common/StatusBadge';
 import Avatar from '../../../../src/components/common/Avatar';
 import EmptyState from '../../../../src/components/common/EmptyState';
 import Loader from '../../../../src/components/common/Loader';
+import { fetchSiteBudgetSummary, fetchSiteBudgetHistory } from '../../../../src/services/api';
 
 // ── ADDED REUSABLE IMPORTS ──
 import { selectIsOnline } from '../../../../src/store/slices/offlineSlice';
@@ -42,6 +44,11 @@ export default function SiteDetailScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [budgetSummary, setBudgetSummary] = useState(null);
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [budgetError, setBudgetError] = useState(null);
+  const [budgetHistory, setBudgetHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const onRefresh = useCallback(async () => {
     if (!isOnline) {
@@ -60,6 +67,37 @@ export default function SiteDetailScreen() {
       setRefreshing(false);
     }
   }, [isOnline, dispatch]);
+
+  // ── FETCH BUDGET SUMMARY ──
+  const loadBudgetSummary = useCallback(async () => {
+    if (!id) return;
+    setBudgetLoading(true);
+    const res = await fetchSiteBudgetSummary(id);
+    if (res.success) {
+      setBudgetSummary(res.data);
+      setBudgetError(null);
+    } else {
+      setBudgetError(res.code === 403 ? 'Access denied for this site' : 'Could not load budget data');
+    }
+    setBudgetLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    loadBudgetSummary();
+  }, [loadBudgetSummary]);
+
+  // ── FETCH BUDGET HISTORY ──
+  const loadBudgetHistory = useCallback(async () => {
+    if (!id) return;
+    setHistoryLoading(true);
+    const res = await fetchSiteBudgetHistory(id, 6);
+    if (res.success) setBudgetHistory(res.data);
+    setHistoryLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    loadBudgetHistory();
+  }, [loadBudgetHistory]);
 
   const bgColor = isDark ? '#212121' : '#f9f9f9';
   const surfaceColor = isDark ? '#171717' : '#ffffff';
@@ -258,6 +296,129 @@ export default function SiteDetailScreen() {
           )}
         </View>
 
+        {/* ── BUDGET MTD SECTION ── */}
+        <View style={[styles.card, { backgroundColor: surfaceColor, borderColor }]}>
+          <View style={styles.budgetHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>Budget — MTD Summary</Text>
+            <View style={[styles.mtdBadge, { backgroundColor: isDark ? 'rgba(59,130,246,0.1)' : '#eff6ff' }]}>
+              <Text style={[styles.mtdBadgeText, { color: theme.primary }]}>This Month</Text>
+            </View>
+          </View>
+
+          {budgetLoading ? (
+            <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 16 }} />
+          ) : budgetError ? (
+            <View style={styles.budgetErrorBox}>
+              <Ionicons name="lock-closed-outline" size={18} color={theme.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary, marginLeft: 8 }]}>{budgetError}</Text>
+            </View>
+          ) : (
+            <View style={styles.budgetGrid}>
+              <View style={[styles.budgetMetric, { backgroundColor: isDark ? 'rgba(234,179,8,0.08)' : '#fefce8', borderColor: isDark ? 'rgba(234,179,8,0.2)' : '#fef08a' }]}>
+                <Ionicons name="time-outline" size={20} color="#ca8a04" />
+                <Text style={[styles.budgetValue, { color: '#ca8a04' }]}>
+                  ₹{((budgetSummary?.pending_spend || 0) / 100).toLocaleString('en-IN')}
+                </Text>
+                <Text style={[styles.budgetLabel, { color: theme.textSecondary }]}>Pending</Text>
+              </View>
+
+              <View style={[styles.budgetMetric, { backgroundColor: isDark ? 'rgba(16,163,127,0.08)' : '#f0fdf4', borderColor: isDark ? 'rgba(16,163,127,0.2)' : '#bbf7d0' }]}>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#10a37f" />
+                <Text style={[styles.budgetValue, { color: '#10a37f' }]}>
+                  ₹{((budgetSummary?.approved_spend || 0) / 100).toLocaleString('en-IN')}
+                </Text>
+                <Text style={[styles.budgetLabel, { color: theme.textSecondary }]}>Approved</Text>
+              </View>
+
+              <View style={[styles.budgetMetric, { backgroundColor: isDark ? 'rgba(239,68,68,0.08)' : '#fef2f2', borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#fecaca' }]}>
+                <Ionicons name="close-circle-outline" size={20} color="#ef4444" />
+                <Text style={[styles.budgetValue, { color: '#ef4444' }]}>
+                  ₹{((budgetSummary?.rejected_spend || 0) / 100).toLocaleString('en-IN')}
+                </Text>
+                <Text style={[styles.budgetLabel, { color: theme.textSecondary }]}>Rejected</Text>
+              </View>
+
+              <View style={[styles.budgetMetric, { backgroundColor: isDark ? 'rgba(59,130,246,0.08)' : '#eff6ff', borderColor: isDark ? 'rgba(59,130,246,0.2)' : '#bfdbfe' }]}>
+                <Ionicons name="document-text-outline" size={20} color={theme.primary} />
+                <Text style={[styles.budgetValue, { color: theme.primary }]}>
+                  {budgetSummary?.total_requests ?? '—'}
+                </Text>
+                <Text style={[styles.budgetLabel, { color: theme.textSecondary }]}>Total Requests</Text>
+              </View>
+            </View>
+          )}
+
+          {budgetSummary?.ceiling && (
+            <View style={[styles.ceilingRow, { borderTopColor: borderColor }]}>
+              <Text style={[styles.ceilingLabel, { color: theme.textSecondary }]}>Monthly Ceiling</Text>
+              <Text style={[styles.ceilingValue, { color: theme.text }]}>
+                ₹{(budgetSummary.ceiling / 100).toLocaleString('en-IN')}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* ── BUDGET SPEND TREND CHART ── */}
+        <View style={[styles.card, { backgroundColor: surfaceColor, borderColor }]}>
+          <View style={styles.budgetHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+              Spend Trend
+            </Text>
+            <View style={[styles.mtdBadge, { backgroundColor: isDark ? 'rgba(16,163,127,0.1)' : '#f0fdf4' }]}>
+              <Text style={[styles.mtdBadgeText, { color: '#10a37f' }]}>Last 6 Months</Text>
+            </View>
+          </View>
+
+          {historyLoading ? (
+            <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 16 }} />
+          ) : budgetHistory && Array.isArray(budgetHistory) && budgetHistory.length > 0 ? (
+            (() => {
+              const labels = budgetHistory.map(d => d.month_label || d.month || '');
+              const dataPoints = budgetHistory.map(d => Math.round((d.approved_spend || 0) / 100));
+              const hasData = dataPoints.some(v => v > 0);
+              return hasData ? (
+                <LineChart
+                  data={{
+                    labels,
+                    datasets: [{ data: dataPoints }],
+                  }}
+                  width={SCREEN_WIDTH - 64}
+                  height={180}
+                  yAxisLabel="₹"
+                  yAxisSuffix=""
+                  formatYLabel={(v) => {
+                    const num = parseInt(v);
+                    if (num >= 100000) return `${(num/100000).toFixed(1)}L`;
+                    if (num >= 1000) return `${(num/1000).toFixed(0)}K`;
+                    return `${num}`;
+                  }}
+                  chartConfig={{
+                    backgroundColor: surfaceColor,
+                    backgroundGradientFrom: surfaceColor,
+                    backgroundGradientTo: surfaceColor,
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(16, 163, 127, ${opacity})`,
+                    labelColor: () => theme.textSecondary,
+                    style: { borderRadius: 12 },
+                    propsForDots: { r: '4', strokeWidth: '2', stroke: '#10a37f' },
+                    propsForBackgroundLines: { stroke: isDark ? '#2a2a2a' : '#f0f0f0' },
+                  }}
+                  bezier
+                  style={{ marginTop: 12, borderRadius: 12 }}
+                />
+              ) : (
+                <Text style={[styles.emptyText, { color: theme.textSecondary, marginTop: 12 }]}>
+                  No approved spend data for the last 6 months.
+                </Text>
+              );
+            })()
+          ) : (
+            <Text style={[styles.emptyText, { color: theme.textSecondary, marginTop: 12 }]}>
+              {budgetHistory === null ? 'Could not load spend history.' : 'No history data available.'}
+            </Text>
+          )}
+        </View>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
 
@@ -298,4 +459,21 @@ const styles = StyleSheet.create({
   viewAllButton: { padding: 12, alignItems: 'center' },
   emptyText: { fontSize: 13, fontStyle: 'italic' },
   bottomPadding: { height: 40 },
+  budgetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  mtdBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  mtdBadgeText: { fontSize: 11, fontWeight: '700' },
+  budgetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
+  budgetMetric: {
+    flex: 1, minWidth: '44%', alignItems: 'center', padding: 16,
+    borderRadius: 14, borderWidth: 1, gap: 6,
+  },
+  budgetValue: { fontSize: 18, fontWeight: '800' },
+  budgetLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  budgetErrorBox: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  ceilingRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  ceilingLabel: { fontSize: 13, fontWeight: '600' },
+  ceilingValue: { fontSize: 15, fontWeight: '800' },
 });

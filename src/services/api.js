@@ -192,7 +192,7 @@ export const fetchSolversPerformanceAPI = async () => {
   }
 };
 
-// 📍 DASHBOARD CARD ENDPOINTS
+// ==================== DASHBOARD CARD ENDPOINTS
 export const fetchResolvedIssuesCard = async (params) => {
   try {
     const response = await api.get('/api/v1/dashboard-cards/resolved', { params });
@@ -262,6 +262,169 @@ export const fetchDashboardCardIssueDetail = async (cardType, issueId) => {
   }
 };
 
+// ==================== BUDGET API ====================
+
+export const fetchBudgetRequests = async (params = {}) => {
+  try {
+    const response = await api.get('/api/v1/budget/requests', { params });
+    const data = response.data;
+    // Handle both { items: [] } and direct array [ ]
+    const rawItems = Array.isArray(data) ? data : (data.items || []);
+    const items = rawItems.map(item => ({
+      ...item,
+      site_name: item.site_name || item.site?.name || item.location_name || item.location,
+      supervisor_name: item.supervisor_name || item.raised_by?.name || 'Supervisor'
+    }));
+    return { success: true, data: Array.isArray(data) ? items : { ...data, items } };
+  } catch (error) {
+    console.log('DEBUG API ERROR fetchBudgetRequests:', error.response?.status, error.response?.data);
+    return { success: false, error: 'Failed to fetch budget requests' };
+  }
+};
+
+export const fetchBudgetTotals = async (user) => {
+  try {
+    const response = await api.get('/api/v1/budget/totals', { params: { user_id: user?.id } });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch budget totals' };
+  }
+};
+
+export const classifyBudgetAmount = async (amountPaise) => {
+  try {
+    const response = await api.get('/api/v1/budget/classify', { params: { amount_paise: amountPaise } });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Classification failed' };
+  }
+};
+
+export const createBudgetRequest = async (payload) => {
+  try {
+    const response = await api.post('/api/v1/budget/requests', payload);
+    const budget = response.data;
+    // Normalize the new record so it displays correctly immediately
+    const normalized = {
+      ...budget,
+      site_name: budget.site_name || budget.site?.name || budget.location_name || payload.site_name,
+      supervisor_name: budget.supervisor_name || budget.raised_by?.name || 'Supervisor'
+    };
+    return { success: true, data: normalized };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.detail?.[0]?.msg || 'Failed to create budget request' };
+  }
+};
+
+export const fetchBudgetBurnRates = async () => {
+  try {
+    const response = await api.get('/api/v1/budget/burn-rate');
+    const data = response.data;
+    // Normalize site names in burn rates
+    const normalized = (Array.isArray(data) ? data : (data.burn_rates || [])).map(br => ({
+      ...br,
+      site_name: br.site_name || br.site?.name || 'Unknown Site'
+    }));
+    return { success: true, data: normalized };
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch burn rates' };
+  }
+};
+
+export const fetchThresholdAlerts = async () => {
+  try {
+    const response = await api.get('/api/v1/budget/threshold-alerts');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch threshold alerts' };
+  }
+};
+
+export const fetchBudgetRequestById = async (id) => {
+  try {
+    const response = await api.get(`/api/v1/budget/requests/${id}`);
+    const item = response.data;
+    const normalized = {
+      ...item,
+      site_name: item.site_name || item.site?.name || item.location_name || item.location,
+      supervisor_name: item.supervisor_name || item.raised_by?.name || 'Supervisor'
+    };
+    return { success: true, data: normalized };
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch request details' };
+  }
+};
+
+// POST /budget/requests/{request_id}/accept — MD approves a PENDING request
+export const acceptBudgetRequest = async (requestId, note = '') => {
+  try {
+    const response = await api.post(`/api/v1/budget/requests/${requestId}/accept`, { note });
+    return { success: true, data: response.data };
+  } catch (error) {
+    let errorMessage = 'Failed to approve request';
+    const detail = error.response?.data?.detail;
+    if (Array.isArray(detail) && detail.length > 0) errorMessage = detail[0].msg;
+    else if (typeof detail === 'string') errorMessage = detail;
+    return { success: false, error: errorMessage };
+  }
+};
+
+// POST /budget/requests/{request_id}/reject — MD rejects a PENDING request
+export const rejectBudgetRequest = async (requestId, note = '') => {
+  try {
+    const response = await api.post(`/api/v1/budget/requests/${requestId}/reject`, { note });
+    return { success: true, data: response.data };
+  } catch (error) {
+    let errorMessage = 'Failed to reject request';
+    const detail = error.response?.data?.detail;
+    if (Array.isArray(detail) && detail.length > 0) errorMessage = detail[0].msg;
+    else if (typeof detail === 'string') errorMessage = detail;
+    return { success: false, error: errorMessage };
+  }
+};
+
+// POST /budget/requests/{request_id}/escalate — MD escalates to Customer MD
+export const escalateBudgetRequest = async (requestId, note = '') => {
+  try {
+    const response = await api.post(`/api/v1/budget/requests/${requestId}/escalate`, { note });
+    return { success: true, data: response.data };
+  } catch (error) {
+    let errorMessage = 'Failed to escalate request';
+    const detail = error.response?.data?.detail;
+    if (Array.isArray(detail) && detail.length > 0) errorMessage = detail[0].msg;
+    else if (typeof detail === 'string') errorMessage = detail;
+    return { success: false, error: errorMessage };
+  }
+};
+
+// GET /budget/sites/{site_id} — MTD budget summary for a single site
+export const fetchSiteBudgetSummary = async (siteId) => {
+  try {
+    const response = await api.get(`/api/v1/budget/sites/${siteId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    if (error.response?.status === 403) {
+      return { success: false, error: 'Access denied for this site', code: 403 };
+    }
+    return { success: false, error: 'Failed to fetch site budget summary' };
+  }
+};
+
+// GET /budget/sites/{site_id}/history — Month-by-month approved spend
+export const fetchSiteBudgetHistory = async (siteId, months = 6) => {
+  try {
+    const response = await api.get(`/api/v1/budget/sites/${siteId}/history`, {
+      params: { months }
+    });
+    return { success: true, data: response.data };
+  } catch (error) {
+    if (error.response?.status === 403) {
+      return { success: false, error: 'Access denied for this site', code: 403 };
+    }
+    return { success: false, error: 'Failed to fetch budget history' };
+  }
+};
+
 // ==================== SUPERVISORS API (TEMPORARY MOCK) ====================
 
 export const fetchSupervisors = async () => {
@@ -284,7 +447,7 @@ export const fetchSitesAnalytics = async () => {
     // Backend returns { total, sites: [...] } — extract the array
     const raw = response.data;
     const rawSites = Array.isArray(raw) ? raw : Array.isArray(raw?.sites) ? raw.sites : [];
-    
+
     // Normalize: backend list endpoint returns SiteListItem (score/health at top level)
     // but frontend expects SiteWithAnalytics shape (analytics sub-object).
     // Handle both shapes so the frontend always gets a consistent structure.
@@ -308,7 +471,7 @@ export const fetchSitesAnalytics = async () => {
         },
       };
     });
-    
+
     return { success: true, sites };
   } catch (error) {
     return { success: false, sites: [] };
@@ -338,15 +501,15 @@ export const fetchComplaintById = async (id) => {
   try {
     if (!id) throw new Error("Complaint ID is required");
     const response = await api.get(`/api/v1/complaints/${id}`);
-    
+
     // Ensure the response data is a valid object
     if (!response.data || typeof response.data !== 'object') {
       throw new Error("Invalid response from server");
     }
 
-    return { 
-      success: true, 
-      complaint: response.data 
+    return {
+      success: true,
+      complaint: response.data
     };
   } catch (error) {
     console.error(`fetchComplaintById(${id}) error:`, error.message);
@@ -370,7 +533,7 @@ export const sendChatWithImage = async ({ text, sessionId, imageUri, intent }) =
     // For now, assuming it's already a URL or the backend handles it.
     // If it's a local path (starts with file://), you should call uploadImageToImageKit first.
     let finalImageUrl = imageUri;
-    
+
     if (imageUri && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
       const uploadRes = await uploadImageToImageKit(imageUri);
       if (uploadRes.success) {
@@ -389,5 +552,7 @@ export default {
   loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser,
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
   fetchResolvedIssuesCard, fetchPendingIssuesCard, fetchEscalatedIssuesCard, fetchResolvedPendingIssuesCard, fetchDashboardCardIssueDetail,
-  fetchSupervisors, fetchSupervisorById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage
+  fetchSupervisors, fetchSupervisorById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
+  fetchBudgetRequests, fetchBudgetTotals, classifyBudgetAmount, createBudgetRequest, fetchBudgetBurnRates
+
 };
