@@ -109,8 +109,9 @@ export const fetchIssues = async (filters = {}) => {
     const queryParams = { ...filters };
     if (filters.status) queryParams.status_filter = filters.status;
     const response = await api.get('/api/v1/issues', { params: queryParams });
-    const data = response.data;
+    const data = response.data || {};
     const items = data.items || data.issues || [];
+    
     const issues = items.map((issue) => ({
       ...issue,
       site: issue.site || { name: issue.site_name || 'Unknown Site' },
@@ -118,7 +119,13 @@ export const fetchIssues = async (filters = {}) => {
     }));
     return { success: true, issues, next_cursor: data.next_cursor, has_more: data.has_more };
   } catch (error) {
-    return { success: false, issues: [] };
+    console.error('DEBUG API ERROR fetchIssues:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+      params: error.config?.params
+    });
+    return { success: false, issues: [], error: error.response?.data?.detail || 'Server error' };
   }
 };
 

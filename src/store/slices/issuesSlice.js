@@ -299,6 +299,7 @@ const issuesSlice = createSlice({
       .addCase(fetchIssues.rejected, (state, action) => {
         state.loading = false;
         state.loadingMore = false;
+        state.hasMore = false; // 📍 STOP INFINITE LOOP ON ERROR
         if (action.payload !== 'No more items') {
           state.error = action.payload;
         }
@@ -333,6 +334,7 @@ const issuesSlice = createSlice({
       .addCase(fetchResolvedIssues.rejected, (state, action) => {
         state.loading = false;
         state.loadingMore = false;
+        state.hasMore = false;
         if (action.payload !== 'No more items') {
           state.error = action.payload;
         }
@@ -367,6 +369,7 @@ const issuesSlice = createSlice({
       .addCase(fetchPendingIssues.rejected, (state, action) => {
         state.loading = false;
         state.loadingMore = false;
+        state.hasMore = false;
         if (action.payload !== 'No more items') {
           state.error = action.payload;
         }
