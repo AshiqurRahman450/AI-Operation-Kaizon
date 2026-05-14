@@ -115,8 +115,22 @@ export const fetchMDContactCard = async () => {
 
 export const fetchIssues = async (filters = {}) => {
   try {
-    const queryParams = { ...filters };
-    if (filters.status) queryParams.status_filter = filters.status;
+    const queryParams = {};
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+        queryParams[key] = filters[key];
+      }
+    });
+    
+    if (queryParams.status) {
+      queryParams.status_filter = queryParams.status;
+      delete queryParams.status;
+    }
+    if (queryParams.site) {
+      queryParams.site_id = queryParams.site;
+      delete queryParams.site;
+    }
+
     const response = await api.get('/api/v1/issues', { params: queryParams });
     const data = response.data || {};
     const items = data.items || data.issues || [];
@@ -128,7 +142,7 @@ export const fetchIssues = async (filters = {}) => {
     }));
     return { success: true, issues, next_cursor: data.next_cursor, has_more: data.has_more };
   } catch (error) {
-    console.error('DEBUG API ERROR fetchIssues:', {
+    console.warn('DEBUG API ERROR fetchIssues:', {
       status: error.response?.status,
       data: error.response?.data,
       url: error.config?.url,
@@ -478,7 +492,7 @@ export const fetchSupervisors = async () => {
     const supervisors = response.data?.items || response.data || [];
     return { success: true, supervisors };
   } catch (error) {
-    console.error('DEBUG API ERROR fetchSupervisors:', error.response?.status, error.response?.data);
+    console.warn('DEBUG API ERROR fetchSupervisors:', error.response?.status, error.response?.data);
     return { success: false, supervisors: [], error: error.response?.data?.detail || 'Failed to fetch supervisors' };
   }
 };
@@ -488,7 +502,7 @@ export const fetchSupervisorById = async (id) => {
     const response = await api.get(`/api/v1/supervisors/${id}`);
     return { success: true, supervisor: response.data };
   } catch (error) {
-    console.error('DEBUG API ERROR fetchSupervisorById:', id, error.response?.status, error.response?.data);
+    console.warn('DEBUG API ERROR fetchSupervisorById:', id, error.response?.status, error.response?.data);
     return { success: false, supervisor: null, error: error.response?.data?.detail || 'Failed to fetch supervisor detail' };
   }
 };
@@ -502,7 +516,7 @@ export const fetchCustomerMDs = async () => {
     const customerMDs = response.data?.items || response.data || [];
     return { success: true, customerMDs };
   } catch (error) {
-    console.error('DEBUG API ERROR fetchCustomerMDs:', error.response?.status, error.response?.data);
+    console.warn('DEBUG API ERROR fetchCustomerMDs:', error.response?.status, error.response?.data);
     return { success: false, customerMDs: [], error: error.response?.data?.detail || 'Failed to fetch Customer MDs' };
   }
 };
@@ -512,7 +526,7 @@ export const fetchCustomerMDById = async (id) => {
     const response = await api.get(`/api/v1/customer-mds/${id}`);
     return { success: true, customerMD: response.data };
   } catch (error) {
-    console.error('DEBUG API ERROR fetchCustomerMDById:', id, error.response?.status, error.response?.data);
+    console.warn('DEBUG API ERROR fetchCustomerMDById:', id, error.response?.status, error.response?.data);
     return { success: false, customerMD: null, error: error.response?.data?.detail || 'Failed to fetch Customer MD detail' };
   }
 };
