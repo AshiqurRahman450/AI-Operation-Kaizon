@@ -22,6 +22,7 @@ import {
   selectSupervisorsLoading,
   clearCurrentSupervisor 
 } from '../../../src/store/slices/supervisorsSlice';
+import { openPersonalThread } from '../../../src/services/api';
 
 export default function SupervisorDetailScreen() {
   const { theme, isDark } = useTheme();
@@ -34,6 +35,14 @@ export default function SupervisorDetailScreen() {
 
   useEffect(() => {
     dispatch(fetchSupervisorById(id));
+    
+    // Testing the second API call as per flow
+    const initThread = async () => {
+      console.log(`--- FLOW STEP 2: Opening/Getting thread with Supervisor ID: ${id} ---`);
+      await openPersonalThread(id);
+    };
+    initThread();
+
     return () => dispatch(clearCurrentSupervisor());
   }, [dispatch, id]);
 

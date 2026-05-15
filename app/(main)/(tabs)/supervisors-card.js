@@ -22,6 +22,7 @@ import {
 import Avatar from '../../../src/components/common/Avatar';
 import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import { backToDashboard } from '../../../src/utils/navigation';
+import { fetchPersonalThreads } from '../../../src/services/api';
 
 export default function SupervisorsCardRoute() {
   const { theme, isDark } = useTheme();
@@ -34,6 +35,13 @@ export default function SupervisorsCardRoute() {
 
   useEffect(() => {
     dispatch(fetchSupervisors());
+    
+    // Testing the first API call as per flow
+    const testThreads = async () => {
+      console.log('--- FLOW START: Manager checking Supervisor Threads ---');
+      await fetchPersonalThreads();
+    };
+    testThreads();
   }, [dispatch]);
 
   const onRefresh = async () => {

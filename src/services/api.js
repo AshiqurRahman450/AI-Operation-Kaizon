@@ -609,6 +609,58 @@ export const fetchComplaintById = async (id) => {
   }
 };
 
+// ==================== PERSONAL CHATS API ====================
+
+export const fetchPersonalThreads = async () => {
+  console.log('API CALL: GET /api/v1/personal-chats/threads');
+  try {
+    const response = await api.get('/api/v1/personal-chats/threads');
+    console.log('API RESPONSE [threads]:', response.data);
+    return { success: true, threads: response.data };
+  } catch (error) {
+    console.error('API ERROR [threads]:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.detail || 'Failed to fetch threads' };
+  }
+};
+
+export const openPersonalThread = async (otherUserId) => {
+  console.log(`API CALL: POST /api/v1/personal-chats/threads (other_user_id: ${otherUserId})`);
+  try {
+    const response = await api.post('/api/v1/personal-chats/threads', { other_user_id: otherUserId });
+    console.log('API RESPONSE [openThread]:', response.data);
+    return { success: true, thread: response.data };
+  } catch (error) {
+    console.error('API ERROR [openThread]:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.detail || 'Failed to open thread' };
+  }
+};
+
+export const fetchPersonalMessages = async (threadId, before = null, limit = 50) => {
+  console.log(`API CALL: GET /api/v1/personal-chats/threads/${threadId}/messages (limit: ${limit}, before: ${before})`);
+  try {
+    const params = { limit };
+    if (before) params.before = before;
+    const response = await api.get(`/api/v1/personal-chats/threads/${threadId}/messages`, { params });
+    console.log(`API RESPONSE [messages for ${threadId}]:`, response.data?.items?.length || 0, 'items');
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error(`API ERROR [messages for ${threadId}]:`, error.response?.data || error.message);
+    return { success: false, error: 'Failed to fetch messages' };
+  }
+};
+
+export const sendPersonalChatMessage = async (threadId, body, imageUrls = []) => {
+  console.log(`API CALL: POST /api/v1/personal-chats/threads/${threadId}/messages (body: ${body})`);
+  try {
+    const response = await api.post(`/api/v1/personal-chats/threads/${threadId}/messages`, { body, image_urls: imageUrls });
+    console.log('API RESPONSE [sendMessage]:', response.data);
+    return { success: true, messages: response.data }; // Returns list[ChatMessageResponse]
+  } catch (error) {
+    console.error('API ERROR [sendMessage]:', error.response?.data || error.message);
+    return { success: false, error: 'Failed to send message' };
+  }
+};
+
 export const sendChatMessage = async (text, sessionId, currentIssueId, imageUrl, intent) => {
   try {
     const requestBody = { message: text, session_id: sessionId, issue_id: currentIssueId, image_url: imageUrl, intent: intent };

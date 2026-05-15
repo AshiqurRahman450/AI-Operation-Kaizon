@@ -17,7 +17,11 @@ import { selectCurrentUser } from '../../../src/store/slices/authSlice';
 import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import Avatar from '../../../src/components/common/Avatar';
 import { backToDashboard } from '../../../src/utils/navigation';
-import { fetchMDContactCard } from '../../../src/services/api';
+import { 
+  fetchMDContactCard, 
+  fetchPersonalThreads, 
+  openPersonalThread 
+} from '../../../src/services/api';
 
 /**
  * MD profile card — accessed from Dashboard → Managing Director card.
@@ -25,7 +29,7 @@ import { fetchMDContactCard } from '../../../src/services/api';
  * The chat CTA is a placeholder until Priority 3 lands the personal-chat screen.
  */
 export default function MDCardRoute() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
 
@@ -34,9 +38,19 @@ export default function MDCardRoute() {
 
   useEffect(() => {
     const fetchMD = async () => {
+      setLoading(true);
       const res = await fetchMDContactCard();
       if (res.success && res.md) {
         setMd(res.md);
+        
+        // Testing the flow APIs
+        console.log('--- FLOW START: Supervisor checking MD Threads ---');
+        await fetchPersonalThreads();
+        
+        if (res.md.id) {
+          console.log(`--- FLOW STEP 2: Opening thread with MD ID: ${res.md.id} ---`);
+          await openPersonalThread(res.md.id);
+        }
       }
       setLoading(false);
     };
@@ -66,7 +80,17 @@ export default function MDCardRoute() {
             <Ionicons name="chevron-back" size={22} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Managing Director</Text>
-          <View style={{ width: 22 }} />
+          {md ? (
+            <TouchableOpacity onPress={() => router.push(`/chat/personal/${md.id}`)}>
+              <Ionicons 
+                name="chatbubble-ellipses" 
+                size={22} 
+                color={isDark ? '#ffffff' : theme.primary} 
+              />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 22 }} />
+          )}
         </View>
         <ScrollView contentContainerStyle={styles.content} testID="md-card-screen">
           <View style={[styles.profileCard, { backgroundColor: theme.card, borderColor: theme.border }]}>

@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../../src/theme/ThemeContext';
+import { openPersonalThread } from '../../../src/services/api';
 import Avatar from '../../../src/components/common/Avatar';
 import { 
   fetchCustomerMDById, 
@@ -34,6 +35,14 @@ export default function CustomerMDDetailScreen() {
 
   useEffect(() => {
     dispatch(fetchCustomerMDById(id));
+    
+    // Testing the second API call as per flow
+    const initThread = async () => {
+      console.log(`--- FLOW STEP 2: Opening/Getting thread with Customer MD ID: ${id} ---`);
+      await openPersonalThread(id);
+    };
+    initThread();
+
     return () => dispatch(clearCurrentCustomerMD());
   }, [dispatch, id]);
 
