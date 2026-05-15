@@ -692,6 +692,61 @@ export const sendChatWithImage = async ({ text, sessionId, imageUri, intent }) =
   }
 };
 
+// ==================== GROUP CHATS API ====================
+
+export const fetchGroupChats = async () => {
+  try {
+    const response = await api.get('/api/v1/group-chats');
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.warn('DEBUG API ERROR fetchGroupChats:', error.response?.status, error.response?.data);
+    return { success: false, data: [], error: error.response?.data?.detail || 'Failed to fetch group chats' };
+  }
+};
+
+export const fetchGroupChatById = async (groupId) => {
+  try {
+    const response = await api.get(`/api/v1/group-chats/${groupId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.warn('DEBUG API ERROR fetchGroupChatById:', groupId, error.response?.status, error.response?.data);
+    return { success: false, data: null, error: error.response?.data?.detail || 'Failed to fetch group chat detail' };
+  }
+};
+
+export const fetchGroupMessages = async (groupId, cursor = null, limit = 50) => {
+  try {
+    const params = { limit };
+    if (cursor) params.before = cursor;
+    
+    const response = await api.get(`/api/v1/group-chats/${groupId}/messages`, { params });
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.warn('DEBUG API ERROR fetchGroupMessages:', groupId, error.response?.status, error.response?.data);
+    return { success: false, data: { items: [], has_more: false } };
+  }
+};
+
+export const sendGroupMessageAPI = async (groupId, text) => {
+  try {
+    const response = await api.post(`/api/v1/group-chats/${groupId}/messages`, { body: text, image_urls: [] });
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.warn('DEBUG API ERROR sendGroupMessageAPI:', groupId, error.response?.status, error.response?.data);
+    return { success: false, error: 'Failed to send message' };
+  }
+};
+
+export const markGroupAsRead = async (groupId) => {
+  try {
+    await api.post(`/api/v1/group-chats/${groupId}/read`);
+    return { success: true };
+  } catch (error) {
+    console.warn('DEBUG API ERROR markGroupAsRead:', groupId, error.response?.status, error.response?.data);
+    return { success: false, error: 'Failed to mark as read' };
+  }
+};
+
 export default {
   loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser, fetchMDContactCard,
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
@@ -699,6 +754,6 @@ export default {
   fetchSupervisors, fetchSupervisorById, fetchCustomerMDs, fetchCustomerMDById,
   fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
   fetchBudgetRequests, fetchBudgetTotals, classifyBudgetAmount, createBudgetRequest, fetchBudgetBurnRates,
-  escApproveBudgetRequest, escRejectBudgetRequest
-
+  escApproveBudgetRequest, escRejectBudgetRequest,
+  fetchGroupChats, fetchGroupChatById, fetchGroupMessages, sendGroupMessageAPI, markGroupAsRead
 };

@@ -20,7 +20,7 @@ import { useSelector } from 'react-redux';
 
 import { useTheme } from '../../../../src/theme/ThemeContext';
 import { selectCurrentUser } from '../../../../src/store/slices/authSlice';
-import { getAllGroups } from '../../../../src/services/mocks/multiGroupChatMockService';
+import { fetchGroupChats } from '../../../../src/services/api';
 import { users as mockUsers } from '../../../../src/mocks/users';
 import RoleGuard from '../../../../src/components/navigation/RoleGuard';
 import { normaliseRole, ROLES } from '../../../../src/utils/roles';
@@ -39,14 +39,17 @@ export default function GroupListScreen() {
   const loadGroups = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const data = await getAllGroups(me?.id);
-      // Sort by last message timestamp
-      const sorted = data.sort((a, b) => {
-        const lastA = a.messages?.[a.messages.length - 1]?.ts || a.created_at;
-        const lastB = b.messages?.[b.messages.length - 1]?.ts || b.created_at;
-        return new Date(lastB) - new Date(lastA);
-      });
-      setGroups(sorted);
+      const res = await fetchGroupChats();
+      if (res.success) {
+        const data = res.data || [];
+        // Sort by last message timestamp
+        const sorted = data.sort((a, b) => {
+          const lastA = a.last_message_at || a.created_at;
+          const lastB = b.last_message_at || b.created_at;
+          return new Date(lastB) - new Date(lastA);
+        });
+        setGroups(sorted);
+      }
     } catch (error) {
       console.error('Failed to load groups', error);
     } finally {
@@ -87,16 +90,13 @@ export default function GroupListScreen() {
   };
 
   const getLastMessage = (group) => {
-    if (!group.messages || group.messages.length === 0) return 'No messages yet';
-    const last = group.messages[group.messages.length - 1];
-    if (last.type === 'ai_summary') return '📊 Monthly Summary';
-    const sender = mockUsers.find(u => u.id === last.from);
-    const senderName = last.from === me?.id ? 'You' : (sender?.name || 'System');
-    return `${senderName}: ${last.text}`;
+    if (!group.last_message_body) return 'No messages yet';
+    const senderName = group.last_message_sender_id === me?.id ? 'You' : (group.last_message_sender_name || 'System');
+    return `${senderName}: ${group.last_message_body}`;
   };
 
   const renderGroupItem = ({ item }) => {
-    const lastMsgTs = item.messages?.[item.messages.length - 1]?.ts || item.created_at;
+    const lastMsgTs = item.last_message_at || item.created_at;
     
     return (
       <TouchableOpacity
@@ -109,8 +109,7 @@ export default function GroupListScreen() {
       >
         <View style={[styles.avatarContainer, { backgroundColor: isDark ? '#333' : '#f0f2f5' }]}>
           <Ionicons name="people" size={24} color={theme.primary} />
-          {/* Unread dot mock */}
-          {item.id === 'group-ops' && (
+          {item.unread_count > 0 && (
             <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />
           )}
         </View>

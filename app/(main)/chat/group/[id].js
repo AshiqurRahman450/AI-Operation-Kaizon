@@ -26,12 +26,11 @@ import AIMonthlySummary from '../../../../src/components/chat/AIMonthlySummary';
 import RoleGuard from '../../../../src/components/navigation/RoleGuard';
 import { users as mockUsers } from '../../../../src/mocks/users';
 import {
-  getGroupById,
-  sendGroupMessage,
-  togglePinMessage,
-  pollGroupMessages,
-  deleteGroup,
-} from '../../../../src/services/mocks/multiGroupChatMockService';
+  fetchGroupChatById,
+  fetchGroupMessages,
+  sendGroupMessageAPI,
+  markGroupAsRead
+} from '../../../../src/services/api';
 import { normaliseRole, ROLES } from '../../../../src/utils/roles';
 
 // Enable LayoutAnimation on Android
@@ -357,16 +356,30 @@ export default function GroupChatDetail() {
   const loadInitial = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const g = await getGroupById(id);
-    if (!g) {
+    
+    // Fetch group details
+    const groupRes = await fetchGroupChatById(id);
+    if (!groupRes.success) {
       Alert.alert('Error', 'Group not found');
       router.back();
       return;
     }
-    setGroup(g);
-    setMessages(g.messages || []);
-    const last = g.messages?.[g.messages.length - 1];
-    lastTsRef.current = last?.ts || new Date(0).toISOString();
+    setGroup(groupRes.data);
+    
+    // Fetch initial messages
+    const msgsRes = await fetchGroupMessages(id);
+    if (msgsRes.success && msgsRes.data.items) {
+      // Assuming items are returned newest first (descending order), so reverse to display chronologically
+      const fetchedMsgs = [...msgsRes.data.items].reverse();
+      setMessages(fetchedMsgs);
+      if (fetchedMsgs.length > 0) {
+        lastTsRef.current = fetchedMsgs[fetchedMsgs.length - 1].created_at;
+      }
+    }
+    
+    // Mark as read
+    await markGroupAsRead(id);
+    
     setLoading(false);
   }, [id, router]);
 
@@ -375,15 +388,20 @@ export default function GroupChatDetail() {
   useEffect(() => {
     if (!id) return;
     const intervalId = setInterval(async () => {
-      const { messages: fresh, pinned_ids } = await pollGroupMessages(id, lastTsRef.current);
-      if (fresh.length > 0) {
-        setMessages((prev) => [...prev, ...fresh]);
-        lastTsRef.current = fresh[fresh.length - 1].ts;
+      const msgsRes = await fetchGroupMessages(id, null, 20); // Fetch latest 20
+      if (msgsRes.success && msgsRes.data.items) {
+        const fetchedMsgs = [...msgsRes.data.items].reverse();
+        setMessages((prev) => {
+          // Merge new messages
+          const newMsgs = fetchedMsgs.filter(m => !prev.find(p => p.id === m.id));
+          if (newMsgs.length > 0) {
+            markGroupAsRead(id);
+            return [...prev, ...newMsgs];
+          }
+          return prev;
+        });
       }
-      if (pinned_ids) {
-        setGroup((g) => (g ? { ...g, pinned_ids } : g));
-      }
-    }, 3000);
+    }, 5000);
     return () => clearInterval(intervalId);
   }, [id]);
 
@@ -398,63 +416,26 @@ export default function GroupChatDetail() {
   const onSend = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
-    const res = await sendGroupMessage(id, me, text);
+    const res = await sendGroupMessageAPI(id, text);
     if (res.success) {
       setText('');
-      setMessages(res.group.messages);
-      lastTsRef.current = res.message.ts;
+      // Optimistically add or just let polling pick it up. Let's add it optimistically.
+      if (res.data) {
+        setMessages(prev => [...prev, res.data]);
+      }
+      await markGroupAsRead(id);
+    } else {
+      Alert.alert('Error', 'Failed to send message');
     }
     setSending(false);
   };
 
   const onPin = async (messageId) => {
-    if (currentRole !== ROLES.MANAGER) {
-      Alert.alert('Only the MD can pin decisions');
-      return;
-    }
-    const res = await togglePinMessage(id, me, messageId);
-    if (res.success) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setGroup(res.group);
-    }
+    Alert.alert('Not Supported', 'Pinning messages not supported yet via API.');
   };
 
   const handleDelete = async () => {
-    console.log('DEBUG: Delete button clicked for id:', id);
-    if (id === 'group-ops') {
-      Alert.alert('Protected Group', 'The main Ops Team group cannot be deleted.');
-      return;
-    }
-
-    const performDelete = async () => {
-      console.log('DEBUG: Executing deletion...');
-      const res = await deleteGroup(id);
-      if (res.success) {
-        console.log('DEBUG: Deletion success, redirecting...');
-        // Give storage a moment to sync before navigating back
-        setTimeout(() => {
-          router.replace('/(main)/chat/group');
-        }, 300);
-      } else {
-        console.error('DEBUG: Deletion failed:', res.error);
-        Alert.alert('Error', 'Failed to delete group');
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to delete this group?')) {
-        await performDelete();
-      }
-    } else {
-      Alert.alert(
-        'Delete Group',
-        'Are you sure you want to delete this group? This action cannot be undone.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: performDelete },
-        ]
-      );
-    }
+    Alert.alert('Not Supported', 'Delete group not supported yet via API.');
   };
 
   const senderName = (fromId) => {
@@ -509,14 +490,14 @@ export default function GroupChatDetail() {
                 if (item.type === 'ai_summary') {
                   return <AIMonthlySummary summary={item.summary} period={item.period} />;
                 }
-                const isOwn = item.from === me?.id;
+                const isOwn = item.sender_id === me?.id;
                 const isPinned = (group?.pinned_ids || []).includes(item.id);
                 return (
                   <MessageRow
-                    item={item}
+                    item={{ ...item, text: item.body || item.text, ts: item.created_at || item.ts }}
                     isOwn={isOwn}
                     isPinned={isPinned}
-                    senderName={senderName(item.from)}
+                    senderName={senderName(item.sender_id)}
                     canPin={canPin}
                     onPin={onPin}
                     theme={theme}
